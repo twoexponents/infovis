@@ -88,10 +88,15 @@
 	// hmlee
 	// Assume that filtered data is fed
     d3.json("data/wine_10000.json", function(error, data) {
+<<<<<<< HEAD
       if(error) return console.error(error)
 
       filtered_stat = calcStat(data.slice(0, 10))
 
+=======
+		if(error) return console.error(error)
+		calcStat(data.slice(0, 10))
+>>>>>>> c310d000030eb5f054a42308d1c32b383c428ce1
 	})
 
 
@@ -172,6 +177,7 @@
 	// calculate statistic for filtered data
 	function calcStat(data) {
 
+<<<<<<< HEAD
     let ratings = []
     let prices = [] 
 		d3.map(data, function(d) { prices.push(d.price) })
@@ -181,6 +187,19 @@
     let price_mean = d3.mean(prices)
 
     return [rating_mean, price_mean]
+=======
+		let priceList = d3.map(data, function(d) { return d.price })
+		let ratingList = d3.map(data, function(d) { return d.points })
+
+		let ratings = data.forEach(function(d) {return d.points})
+
+		console.log(ratings)
+			
+		console.log(ratingList.keys())
+		console.log(priceList.keys())
+		//data.forEach(function(d) {		
+		//})
+>>>>>>> c310d000030eb5f054a42308d1c32b383c428ce1
 	}
 
     // 필터박스에 따라서 국가별 컬러를 새로 계산.

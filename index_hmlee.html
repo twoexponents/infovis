@@ -85,6 +85,16 @@
           })
         .call(zoom);
 
+	// hmlee
+	// Assume that filtered data is fed
+    d3.json("data/wine_10000.json", function(error, data) {
+      if(error) return console.error(error)
+
+      filtered_stat = calcStat(data.slice(0, 10))
+
+	})
+
+
     let countryData =
                [{"id": "AUS", "color": "#DCBA98"},
                 {"id": "USA", "color": "#FEDCBA"},
@@ -158,10 +168,19 @@
 
     });
 
-	// 통계값 계산
-	function stat() {
+	// hmlee
+	// calculate statistic for filtered data
+	function calcStat(data) {
 
+    let ratings = []
+    let prices = [] 
+		d3.map(data, function(d) { prices.push(d.price) })
+		d3.map(data, function(d) { ratings.push(+d.points) })
 
+    let rating_mean = d3.mean(ratings)
+    let price_mean = d3.mean(prices)
+
+    return [rating_mean, price_mean]
 	}
 
     // 필터박스에 따라서 국가별 컬러를 새로 계산.

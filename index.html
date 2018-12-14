@@ -48,18 +48,19 @@
   <script src="http://d3js.org/d3.v3.min.js"></script>
   <script src="http://d3js.org/topojson.v1.min.js"></script>
   <script>
-    var width = 962, rotated = 210, height = 502;
+    var width = 1100, rotated = 205, height = 600;
 
-    var usa; 
-    var states; //track states
+    var usa, states; //track states
     //track where mouse was clicked
     var initX;
     //track scale only rotate when s === 1
     var s = 1;
     var mouseClicked = false;
+    var viewDegree = "country";
+    var rotateVal = 0;
 
     var projection = d3.geo.mercator()
-        .scale(160)
+        .scale(180)
         .translate([width/2,height/1.5])
         .rotate([rotated,0,0]); //center on USA because 'murica
     
@@ -91,14 +92,7 @@
                 {"id": "FRA", "color": "#A09876"}];
 
     let regionData = 
-               [{"id": "Oregon", "latitude": "45.512794", "longitude": "-122.679565", "price": "43", "point": "87"}];
-    let tab = "point";
-
-    function rotateMap(endX) {
-        projection.rotate([rotated + (endX - initX) * 360 / (s * width),0,0])
-            g.selectAll('path')       // re-project path data
-           .attr('d', path);
-    }
+               [{"id": "Oregon", "latitude": "45.512794", "longitude": "-122.679565", "price": "43", "point": "87", "nums": "22"}];
 
     //for tooltip 
     var offsetL = document.getElementById('map').offsetLeft+10;
@@ -122,6 +116,7 @@
         .selectAll("boundary")
           .data(topojson.feature(world, world.objects.countries).features)
           .enter().append("path")
+          .attr("class", "country")
           .attr("name", function(d) {return d.properties.name;})
           .attr("id", function(d) { return d.id;})
           .on('click', selected)
@@ -139,6 +134,7 @@
         .selectAll("boundary")
           .data(topojson.feature(world, world.objects.states).features)
           .enter().append("path")
+          .attr("class", "state")
           .attr("name", function(d) { return d.properties.name;})
           .attr("id", function(d) { return d.id;})
           .on("click", selected)
@@ -155,10 +151,9 @@
       regionPoint(g);
       regionPointHidden();
 
-
     });
 
-    // 필터박스에 따라서 국가별 컬러를 새로 계산.
+    //필터에 따라서 국가별 컬러를 새로 계산.
     function countryFill() {
       for(let i=0; i<countryData.length; i++) {
         d3.select('#' + countryData[i].id)
@@ -166,10 +161,8 @@
       }
     }
     function countryUnfill() {
-      for(let i=0; i<countryData.length; i++) {
-        d3.select('#' + countryData[i].id)
-          .attr('fill', '#ECEFF1');
-      }
+      d3.selectAll('.country')
+        .attr('fill', '#ECEFF1'); //base color
     }
     function regionPoint(g) {
       for(let i=0; i<regionData.length; i++) {
@@ -178,45 +171,41 @@
           .enter()
           .append('circle')
           .attr('class', 'region')
-          .attr('r', function(d, i) {
-                        if(tab === 'point') 
-                            return regionData[i].point/40;
-                        else if(tab === 'price')
-                            return regionData[i].price;
-                     })
+          .attr('r', (d, i) => 2)
           .style('fill', '#FF5722')
           .attr('transform', function(d) { 
-            return 'translate(' + projection([+d.longitude, +d.latitude]) + ')'});
+            temp = projection([+d.longitude, +d.latitude]);
+            temp[0] = temp[0] + rotateVal;
+            return 'translate(' + temp + ')'})
+          .on("click", selected)
+          .on("mousemove", showPointTooltip)
+          .on("mouseout",  function(d,i) {
+              tooltip.classed("hidden", true);
+           });
       }
     }
-    function regionPointVisible() {
-      d3.selectAll('.region')
-        .style('visibility', 'visible');
-    }
-    function regionPointHidden() {
-      d3.selectAll('.region')
-        .style('visibility', 'hidden');
+
+    function showPointTooltip(d) {
+      if(viewDegree === "region") {
+        label = d.id;
+        var mouse = d3.mouse(svg.node())
+          .map( function(d) { return parseInt(d); });
+        tooltip.classed("hidden", false)
+          .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
+          .html(label);
+      }
     }
 
     function showTooltip(d) {
-      label = d.properties.name;
-      var mouse = d3.mouse(svg.node())
-        .map( function(d) { return parseInt(d); } );
-      tooltip.classed("hidden", false)
-        .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
-        .html(label);
+      if(viewDegree === "country") {
+        label = d.properties.name;
+        var mouse = d3.mouse(svg.node())
+          .map( function(d) { return parseInt(d); } );
+        tooltip.classed("hidden", false)
+          .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
+          .html(label);
+      }
     }
-
-    function selected(d) {
-      d3.select('.selected').classed('selected', false);
-      d3.select(this).classed('selected', true);
-
-      // d3.select('.selected').classed('selected', false)
-      //   .style('fill', '#ECEFF1');
-      // d3.select(this).classed('selected', true)
-      //   .style('fill', function(d){ console.log(d3.rgb(d.color)); return d3.rgb(d.color).darker(1);});
-    }
-
 
     function zoomed() {
       var t = d3.event.translate;
@@ -245,29 +234,61 @@
       d3.selectAll(".boundary")
         .style("stroke-width", 1 / s);
       
-      //toggle state/USA visability
-
+      //User zoom in, zoom out
       if(s > 2.4) {
-        states
-          .classed('hidden', false);
-        usa
-          .classed('hidden', true);
-
-        countryUnfill();
-        regionPointVisible();
+        zoomIn();
       } else {
-        states
-          .classed('hidden', true);
-        usa
-          .classed('hidden', false);
-
-        countryFill();
-        regionPointHidden();
+        zoomOut();
       }
   }
 
+  function selected(d) {
+    d3.select('.selected').classed('selected', false);
+    d3.select(this).classed('selected', true);
+  }
   function translate(x, y) {
     return 'translate(' + x + ', ' + y + ')';
+  }
+  function zoomIn() {
+    viewDegree = "region";
+
+    states
+      .classed('hidden', false);
+    usa
+      .classed('hidden', true);
+
+    countryUnfill();
+    regionPointVisible();
+  }
+  function zoomOut() {
+    viewDegree = "country";
+
+    states
+      .classed('hidden', true);
+    usa
+      .classed('hidden', false);
+
+    countryFill();
+    regionPointHidden();
+  }
+  function regionPointVisible() {
+    d3.selectAll('.region')
+      .style('visibility', 'visible');
+  }
+  function regionPointHidden() {
+    d3.selectAll('.region')
+      .style('visibility', 'hidden');
+  }
+  function rotateMap(endX) {
+      projection.rotate([rotated + (endX - initX) * 360 / (s * width),0,0])
+          g.selectAll('path')       // re-project path data
+         .attr('d', path);
+      rotateVal = (rotated + (endX - initX) * 360 / (s * width));
+      
+      d3.selectAll('.region')
+         .attr('transform', function(d) { 
+         temp = projection([+d.longitude, +d.latitude]);
+         return 'translate(' + temp + ')'})
   }
   </script>
 </body>

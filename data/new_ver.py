@@ -13,8 +13,10 @@ def run(output):
             for line in rr:
                 line.pop("description", None)
                 line.pop("taster_twitter_handle", None)
-                data.append(line)
                 #print line['country'], cc_list[line['country']]
+                if line['winery'] == 'X':
+                    continue
+                data.append(line)
 
             json.dump(data, fw)
             print "Output len: ", len(data)

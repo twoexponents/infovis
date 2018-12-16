@@ -39,6 +39,7 @@
       opacity: 0.9; 
       position: absolute;
     }
+    
   </style>
 
 </head>
@@ -58,6 +59,7 @@
     var mouseClicked = false;
     var viewDegree = "country";
     var rotateVal = 0;
+    var prev = ""
 
     var projection = d3.geo.mercator()
         .scale(180)
@@ -85,6 +87,20 @@
               mouseClicked = false;
           })
         .call(zoom);
+   
+    function translate(x, y) {
+      return 'translate(' + x + ', ' + y + ')';
+    }
+
+    let plot = d3.select('body').append('svg')
+        .attr('width', 670)
+        .attr('height', 450)
+        .attr('transform', 'translate(10, -150)');
+
+    let below_plot = d3.select('body').append('svg')
+        .attr('width', 670)
+        .attr('height', 450)
+        .attr('transform', 'translate(1110, -140)');
 
     let countryData =
                [{"id": "AUS", "color": "#DCBA98"},
@@ -92,10 +108,13 @@
                 {"id": "FRA", "color": "#A09876"}];
 
     let regionData = 
-               [{"id": "Oregon", "latitude": "45.512794", "longitude": "-122.679565", "price": "43", "point": "87", "nums": "22"}];
+               [ {"id": "California", "latitude": "35.62565", "longitude": "120.691316", "price": "43", "point": "87", "nums": "22"}, {"id": "Oregon", "latitude": "45.512794", "longitude": "-122.679565", "price": "43", "point": "87", "nums": "22"}];
+
 
     // hmlee
     // Assume that filtered data is fed
+    let cali_data;
+    let ore_data;
       d3.json("data/wine_9996_ver2.json", function(error, data) {
  
         if(error) return console.error(error)
@@ -110,7 +129,12 @@
         province_filtered = country_filtered.filter(function(d) { return d.province == province})
         province_stat = provinceStat(province_filtered)
         console.log(province_stat)
+        cali_data = province_stat
 
+        province = 'Oregon'
+        province_filtered = country_filtered.filter(function(d) { return d.province == province})
+        province_stat = provinceStat(province_filtered)
+        ore_data = province_stat
       })
 
     //for tooltip 
@@ -258,8 +282,10 @@
       d3.selectAll('.country')
         .attr('fill', '#ECEFF1'); //base color
     }
+
     function regionPoint(g) {
       for(let i=0; i<regionData.length; i++) {
+
         g.selectAll('circle')
           .data(regionData, d => d.id)
           .enter()
@@ -271,7 +297,9 @@
             temp = projection([+d.longitude, +d.latitude]);
             temp[0] = temp[0] + rotateVal;
             return 'translate(' + temp + ')'})
-          .on("click", selected)
+          .on("click", function(d, i) {
+            regionStat(d)
+          })
           .on("mousemove", showPointTooltip)
           .on("mouseout",  function(d,i) {
               tooltip.classed("hidden", true);
@@ -283,7 +311,7 @@
       if(viewDegree === "region") {
         label = d.id;
         var mouse = d3.mouse(svg.node())
-          .map( function(d) { return parseInt(d); });
+          .map( function(d) { return parseInt(d); })
         tooltip.classed("hidden", false)
           .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
           .html(label);
@@ -334,6 +362,116 @@
       } else {
         zoomOut();
       }
+  }
+
+
+  let init = true;
+  let first = true;
+
+  function regionStat(d) {
+
+    if (first) {
+      first = false;
+      data = cali_data
+    }
+    else {
+      first = true
+      data = ore_data
+    }
+
+    let x = d3.scale.linear()
+        .range([0, 480])
+
+    let y = d3.scale.ordinal()
+        .rangeRoundBands([0, 350])
+
+    let xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom")
+    let yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left")
+
+    xMax = d3.max(data, function(d) { return d.rating; })
+    x.domain([xMax-10, xMax])
+    y.domain(data.map(function(d) { return d.variety }))
+
+    if (init) {
+      init = false
+
+      below_plot.append('text')
+      .attr("x", 55)
+      .attr("y", 30)
+      .text("Variety")
+      .style("font-size", "20px")
+      .style("font-weight", "bold");
+
+      below_plot.append('text')
+      .attr("x", 560)
+      .attr("y", 435)
+      .text("Rating")
+      .style("font-size", "20px")
+      .style("font-weight", "bold");
+
+      below_plot.append('g')
+        .attr('class', 'x-axis')
+
+      below_plot.append('g')
+        .attr('class', 'y-axis')
+    }
+
+    below_plot.selectAll('.x-axis')
+      .call(xAxis)
+      .attr('transform', 'translate(120,' + 390 +")")
+      .transition()
+      .duration(400)
+
+    below_plot.selectAll('.y-axis')
+      .call(yAxis)
+      .attr('transform', 'rotate(-90)')
+      .attr('transform', 'translate(120,' + 40 +")")
+      .selectAll('text')
+        .attr("dx", ".4em")
+        .attr("dy", "-1.2em")
+        .attr('transform', 'rotate(-65)')
+      .transition()
+      .duration(400)
+
+    var bars = below_plot.selectAll('.bars')
+        .data(data, d => d.variety)
+    bars.exit().remove()
+
+    bars.transition()
+        .duration(400)
+        .style("fill", "steelblue")
+        .attr("y", function(d) { return y(d.variety); })
+        .attr("width", function(d) { return x(d.rating);} )
+        .attr("height", 50)
+        .attr('transform', 'translate(120,' + 55 +")")
+
+    bars.enter()
+        .append('rect')
+        .attr('class', 'bars')
+        .transition()
+        .duration(400)
+        .style("fill", "steelblue")
+        .attr("y", function(d) { return y(d.variety); })
+        .attr("width", function(d) { return x(d.rating);} )
+        .attr("height", 50)
+        .attr('transform', 'translate(120,' + 55 +")")
+
+
+/*
+    below_plot.selectAll(".bar")
+      .data(data)
+      .enter().append("rect")
+      .style("fill", "steelblue")
+      .attr("y", function(d) { return y(d.variety); })
+      .attr("width", function(d) { return x(d.rating);} )
+      .attr("height", 35)
+      .attr('transform', 'translate(130,' + 70 +")")
+      */
+
   }
 
   function selected(d) {

@@ -8,10 +8,11 @@ def write1(output):
         with open('winemag-data-130k-v2.json') as fr:
             rr = json.load(fr)
 
+            print len(rr)
             count = 0
             for line in rr:
-                if count == 10000:
-                    break
+               # if count == 10000:
+               #     break
 
                 if line["title"] == None:
                     continue
@@ -43,4 +44,4 @@ def write1(output):
 
 
 if __name__ == "__main__":
-    write1('parsed_wine_10000.json')
+    write1('wine_full.json')

@@ -6,7 +6,7 @@ def run(output):
 
     data = []
     with open(output, 'w') as fw:
-        with open('wine_10000.json') as fr:
+        with open('wine_full.json') as fr:
             rr = json.load(fr)
 
             print "Input len: ", len(rr)
@@ -23,4 +23,4 @@ def run(output):
 
 
 if __name__ == "__main__":
-    run('wine_10000_ver2.json')
+    run('wine_full_ver2.json')

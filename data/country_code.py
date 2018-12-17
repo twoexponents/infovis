@@ -16,7 +16,7 @@ def run(output, cc_list):
 
     data = []
     with open(output, 'w') as fw:
-        with open('parsed_wine_latlng_10000.json') as fr:
+        with open('wine_full.json') as fr:
             rr = json.load(fr)
 
             print "Input len: ", len(rr)
@@ -31,4 +31,4 @@ def run(output, cc_list):
 
 if __name__ == "__main__":
     cc_list = extract()
-    run('wine_latlng_1000.json', cc_list)
+    run('wine_full2.json', cc_list)

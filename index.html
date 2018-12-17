@@ -30,11 +30,15 @@
     }
 
     div.tooltip {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      font-style: normal;
+      font-weight: bold;
       color: #222; 
       background: #fff; 
-      border-radius: 3px; 
+      border-radius: 4px; 
       box-shadow: 0px 0px 2px 0px #a6a6a6; 
-      padding: .2em; 
+      padding: .3em; 
       text-shadow: #f5f5f5 0 1px 0;
       opacity: 0.9; 
       position: absolute;
@@ -87,12 +91,13 @@
         .call(zoom);
 
     let countryData =
-               [{"id": "AUS", "color": "#DCBA98"},
-                {"id": "USA", "color": "#FEDCBA"},
-                {"id": "FRA", "color": "#A09876"}];
+               [{"id": "AUS", "color": "#DCBA98", "nums": "1000"},
+                {"id": "USA", "color": "#FEDCBA", "nums": "50000"},
+                {"id": "FRA", "color": "#A09876", "nums": "10000"}];
 
     let regionData = 
-               [{"id": "Oregon", "latitude": "45.512794", "longitude": "-122.679565", "price": "43", "point": "87", "nums": "22"}];
+               [{"id": "Oregon", "latitude": "45.512794", "longitude": "-122.679565", "price": "43", "point": "87", "nums": "22"},
+                {"id": "Michigan", "latitude": "44.182205", "longitude": "-84.506836", "price": "40", "point": "91", "nums": "40"}];
 
     //for tooltip 
     var offsetL = document.getElementById('map').offsetLeft+10;
@@ -105,6 +110,23 @@
 
     //need this for correct panning
     var g = svg.append("g");
+
+    var myColorScales = ['#FFE8CE', '#FFDBB2', '#FFCB8E', '#FFBE73', '#FFB157', '#FFA63F', '#FF9B28'];
+
+    function linespace(start, end, n) {
+      var out = [];
+      var delta = (end - start) / (n - 1);
+      var i =0;
+      while(i < (n - 1)) {
+        out.push(start + (i * delta));
+        i++;
+      }
+      out.push(end);
+      return out;
+    }
+
+    let radiusRange;
+    let popScale;
 
     //det json data and draw it
     d3.json("combined3.json", function(error, world) {
@@ -147,6 +169,20 @@
       states = d3.selectAll('.state');
       countries = d3.selectAll('.countries');
 
+      popScale = d3.scale.linear()
+        .domain(linespace(
+          d3.min(countryData, d=>Math.log(+d.nums)),
+          d3.max(countryData, d=>Math.log(+d.nums)),
+          myColorScales.length))
+        .range(myColorScales);
+
+      radiusRange = d3.scale.linear()
+        .domain([
+          d3.min(regionData, d=>d.nums),
+          d3.max(regionData, d=>d.nums)
+        ])
+        .rangeRound([1.5, 4]);
+
       countryFill();
       regionPoint(g);
       regionPointHidden();
@@ -157,7 +193,9 @@
     function countryFill() {
       for(let i=0; i<countryData.length; i++) {
         d3.select('#' + countryData[i].id)
-          .attr('fill', countryData[i].color);
+          .attr('fill', function() {
+            return popScale(Math.log(+countryData[i].nums));});
+          
       }
     }
     function countryUnfill() {
@@ -171,7 +209,7 @@
           .enter()
           .append('circle')
           .attr('class', 'region')
-          .attr('r', (d, i) => 2)
+          .attr('r', d => radiusRange(+d.nums))
           .style('fill', '#FF5722')
           .attr('transform', function(d) { 
             temp = projection([+d.longitude, +d.latitude]);
@@ -187,7 +225,7 @@
 
     function showPointTooltip(d) {
       if(viewDegree === "region") {
-        label = d.id;
+        label = d.id + '</br>' + 'records: ' + d.nums;
         var mouse = d3.mouse(svg.node())
           .map( function(d) { return parseInt(d); });
         tooltip.classed("hidden", false)
@@ -196,9 +234,21 @@
       }
     }
 
+    function getCountryData(id) {
+      for(var i=0; i<countryData.length; i++) {
+        if(id === countryData[i].id)
+          return countryData[i];
+      }
+      return null;
+    }
     function showTooltip(d) {
       if(viewDegree === "country") {
-        label = d.properties.name;
+        var data = getCountryData(d.id);
+
+        if(data === null)
+          label = d.properties.name;
+        else
+          label = d.properties.name + '</br>' + 'records: ' + data.nums;
         var mouse = d3.mouse(svg.node())
           .map( function(d) { return parseInt(d); } );
         tooltip.classed("hidden", false)
@@ -245,6 +295,8 @@
   function selected(d) {
     d3.select('.selected').classed('selected', false);
     d3.select(this).classed('selected', true);
+
+    
   }
   function translate(x, y) {
     return 'translate(' + x + ', ' + y + ')';

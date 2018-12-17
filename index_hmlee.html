@@ -29,6 +29,10 @@
       display: none;
     }
 
+    .bars:hover {
+      filter: brightness(120%);
+    }
+
     div.tooltip {
 	  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	  font-size: 15px;
@@ -113,13 +117,12 @@
 
     let regionData = 
                [ {"id": "Oregon", "latitude": "45.512794", "longitude": "-122.679565", "price": "43", "point": "87", "nums": "22"}, 
-			   {"id": "Michigan", "latitude": "44.182205", "longitude": "-84.506836", "price": "40", "point": "91", "nums": "40"}];
+			           {"id": "Michigan", "latitude": "44.182205", "longitude": "-84.506836", "price": "40", "point": "91", "nums": "40"},
+                 {"id": "California", "latitude": "38.44368", "longitude": "-123.12019", "price": "69", "point": "83", "nums": "200"}];
 
 
     // hmlee
     // Assume that filtered data is fed
-    let cali_data;
-    let ore_data;
       d3.json("data/wine_9996_ver2.json", function(error, data) {
  
         if(error) return console.error(error)
@@ -128,18 +131,11 @@
         //data = data.slice(0, 1000)
         country_filtered = data.filter(function(d) { return d.ctr_code == ctr_code })
         country_stat = countryStat(country_filtered)
-        console.log(country_stat)
 
         province = 'California'
         province_filtered = country_filtered.filter(function(d) { return d.province == province})
         province_stat = provinceStat(province_filtered)
-        console.log(province_stat)
-        cali_data = province_stat
 
-        province = 'Oregon'
-        province_filtered = country_filtered.filter(function(d) { return d.province == province})
-        province_stat = provinceStat(province_filtered)
-        ore_data = province_stat
       })
 
     //for tooltip 
@@ -268,8 +264,12 @@
         return 0
       })
 
+      province_list = province_list.slice(0, 5)
+      province_list.forEach(function(d, i) {
+        d['rank'] = i
+      })
       // return top 5 provinces
-      return province_list.slice(0, 5)
+      return province_list
     }
 
     // hmlee
@@ -293,7 +293,6 @@
         }
       })
 
-      console.log(variety_list)
       variety_list.sort(function (a, b) {
         if (a.rating > b.rating)
           return -1
@@ -302,8 +301,13 @@
         return 0
       })
 
+      variety_list = variety_list.slice(0, 5)
+      variety_list.forEach(function(d, i) {
+        d['rank'] = i
+      })
+
       // return top 5 varieties
-      return variety_list.slice(0, 5)
+      return variety_list
     }
 
     //필터에 따라서 국가별 컬러를 새로 계산.
@@ -415,19 +419,35 @@
   }
 
 
-  let init = true;
-  let first = true;
+    function barTooltip(d) {
+      label = "TEST"
+      //label = d.variety + '</br>' + '# of records: ' + d.record_count;
+        var mouse = d3.mouse(svg.node())
+          .map( function(d) { return parseInt(d); })
+        tooltip.classed("hidden", false)
+          .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
+          .html(label);
+    }
 
+    function barMouseOver(d) {
+      d3.select(this.parentNode).append("text")
+         .attr('x', 140)
+         .attr('y', d.rank * 70 + 82)
+         .style("font-family", "sans-serif")
+         .style("font-size", "18px")
+         .attr('class', 'barCount')
+         .text("# of records: " + d.record_count);
+   } 
+
+   function barMouseOut() {
+    d3.selectAll('.barCount').remove()
+   }
+
+  let init = true;
   function regionStat(d) {
 
-    if (first) {
-      first = false;
-      data = cali_data
-    }
-    else {
-      first = true
-      data = ore_data
-    }
+    province_filtered = country_filtered.filter(function(dd) { return dd.province == d.id})
+    data = provinceStat(province_filtered)
 
     let x = d3.scale.linear()
         .range([0, 480])
@@ -487,40 +507,48 @@
       .transition()
       .duration(400)
 
-    var bars = below_plot.selectAll('.bars')
-        .data(data, d => d.variety)
-    bars.exit().remove()
+    let bars = below_plot.selectAll('.bars')
+        .data(data, d=>d.variety)
+ 
 
-    bars.transition()
-        .duration(400)
-        .style("fill", "steelblue")
-        .attr("y", function(d) { return y(d.variety); })
-        .attr("width", function(d) { return x(d.rating);} )
-        .attr("height", 50)
-        .attr('transform', 'translate(120,' + 55 +")")
+    bars.exit()
+        .remove()
 
     bars.enter()
         .append('rect')
         .attr('class', 'bars')
-        .transition()
-        .duration(400)
+        .attr('transform', 'translate(120, 53)')
         .style("fill", "steelblue")
-        .attr("y", function(d) { return y(d.variety); })
-        .attr("width", function(d) { return x(d.rating);} )
-        .attr("height", 50)
-        .attr('transform', 'translate(120,' + 55 +")")
+        .attr('opacity', 0)
+        .on('mousemove', barMouseOver)
+        .on("mouseout", barMouseOut)
+        .transition()
 
-
+    bars.append('text')
+      .attr("x", -560)
+      .attr("y", -435)
+      .style("font-size", "20px")
+      .style("font-weight", "bold")
+      .text(function(d) {d.variety})
 /*
-    below_plot.selectAll(".bar")
-      .data(data)
-      .enter().append("rect")
-      .style("fill", "steelblue")
-      .attr("y", function(d) { return y(d.variety); })
-      .attr("width", function(d) { return x(d.rating);} )
-      .attr("height", 35)
-      .attr('transform', 'translate(130,' + 70 +")")
-      */
+    bars.append('text')
+      .attr("x", 560)
+      .attr("y", 435)
+      .style("font-size", "20px")
+      .style("font-weight", "bold")
+      .text(function(d) {console.log(d); return d.rating})
+*/
+    bars
+        .attr("height", 50)
+        .transition()
+        .duration(800)
+        .attr('opacity', 1)
+        .attr("y", function(d) { return y(d.variety); })
+        .attr('transform', 'translate(120,' + 53 +")")
+        .attr("width", function(d) { return x(d.rating);} )
+        .style("fill", "steelblue")
+      
+
 
   }
 

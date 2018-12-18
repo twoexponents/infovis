@@ -28,6 +28,9 @@
     .hidden {
       display: none;
     }
+    .bars:hover {
+      filter: brightness(120%);
+    }
     div.tooltip {
 	    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	    font-size: 15px;
@@ -119,16 +122,26 @@
     let radiusScale; //region point radius range
     let popScale; //country color range
 
-    let plot = d3.select('body').append('svg') // first graph
-        .attr('width', 650)
+    let country_plot1 = d3.select('body').append('svg') // first graph
+        .attr('width', 580)
         .attr('height', 420)
-        .style('top', '50px')
-        .style('left', '1120px');
-    let below_plot = d3.select('body').append('svg') // second graph
-        .attr('width', 650)
+        .style('top', '665px')
+        .style('left', '10px');
+    let country_plot2 = d3.select('body').append('svg') // second graph
+        .attr('width', 580)
         .attr('height', 420)
-        .style('top', '500px')
-        .style('left', '1120px');
+        .style('top', '665px')
+        .style('left', '595px');
+    let variety_plot = d3.select('body').append('svg') // first graph
+        .attr('width', 670)
+        .attr('height', 540)
+        .style('top', '10px')
+        .style('left', '1190px');
+    let winery_plot = d3.select('body').append('svg') // second graph
+        .attr('width', 670)
+        .attr('height', 530)
+        .style('top', '560px')
+        .style('left', '1190px');
     let countryData =
                [{"id": "AUS", "color": "#DCBA98", "nums": "1000"},
                 {"id": "USA", "color": "#FEDCBA", "nums": "50000"},
@@ -141,7 +154,7 @@
 
     // hmlee
     // Assume that filtered data is fed
-    d3.json("data/wine_9996_ver2.json", function(error, data) {
+    d3.json("data/wine_full.json", function(error, data) {
  
       if(error) return console.error(error)
 
@@ -152,7 +165,7 @@
 
       province = 'California'
       province_filtered = country_filtered.filter(function(d) { return d.province == province})
-      province_stat = provinceStat(province_filtered)
+     // province_stat = provinceStat(province_filtered)
     })
 
     // jhlim
@@ -267,7 +280,7 @@
          .style("font-family", "sans-serif")
          .style("font-size", "18px")
          .attr('class', 'barCount')
-         .text("# of records: " + d.record_count);
+         .text("Avg. Price: $" + d.price);
     } 
 
     function barMouseOut() {
@@ -295,43 +308,53 @@
           .orient("left")
 
       xMax = d3.max(data, function(d) { return d.rating; })
-      x.domain([xMax-10, xMax])
+      x.domain([80, 98])
       y.domain(data.map(function(d) { return d.variety }))
 
       if (init) {
         init = false
-
-        below_plot.append('text')
-        .attr("x", 55)
+        
+        variety_plot.append('text')
+        .attr("x", 315)
         .attr("y", 30)
+        .text(d.id)
+        .attr('class', 'title')
+        .style("font-size", "25px")
+        .style("font-weight", "bold");
+
+        variety_plot.append('text')
+        .attr("x", 63)
+        .attr("y", 65)
         .text("Variety")
         .style("font-size", "20px")
         .style("font-weight", "bold");
 
-        below_plot.append('text')
-        .attr("x", 560)
-        .attr("y", 435)
+        variety_plot.append('text')
+        .attr("x", 575)
+        .attr("y", 470)
         .text("Rating")
         .style("font-size", "20px")
         .style("font-weight", "bold");
 
-        below_plot.append('g')
+        variety_plot.append('g')
           .attr('class', 'x-axis')
 
-        below_plot.append('g')
+        variety_plot.append('g')
           .attr('class', 'y-axis')
       }
 
-      below_plot.selectAll('.x-axis')
+      variety_plot.selectAll('.x-axis')
         .call(xAxis)
-        .attr('transform', 'translate(120,' + 390 +")")
+        .attr('transform', 'translate(135,' + 430 +")")
         .transition()
         .duration(400)
 
-      below_plot.selectAll('.y-axis')
-        .call(yAxis).style('stroke', 'blue')
+      variety_plot.selectAll('.y-axis')
+        .call(yAxis)
+        .style('stroke', 'blue')
+        .style('stroke-width', '0.2px')
         .attr('transform', 'rotate(-90)')
-        .attr('transform', 'translate(120,' + 40 +")")
+        .attr('transform', 'translate(135,' + 80 +")")
         .selectAll('text')
           .attr("dx", ".4em")
           .attr("dy", "-1.2em")
@@ -339,45 +362,41 @@
         .transition()
         .duration(400)
 
-      let bars = below_plot.selectAll('.bars')
+      variety_plot.selectAll('.title')
+        .attr("x", 315)
+        .attr("y", 30)
+        .text(d.id)
+        .attr('class', 'title')
+        .style("font-size", "25px")
+        .style("font-weight", "bold");
+
+      let bars = variety_plot.selectAll('.bars')
           .data(data, d=>d.variety)
    
-
       bars.exit()
           .remove()
 
       bars.enter()
           .append('rect')
           .attr('class', 'bars')
-          .attr('transform', 'translate(120, 53)')
+          .attr('transform', 'translate(135, 90)')
+          .attr("width", function(d) { return 0 } )
           .style("fill", "steelblue")
           .attr('opacity', 0)
           .on('mousemove', barMouseOver)
           .on("mouseout", barMouseOut)
           .transition()
 
-      bars.append('text')
-        .attr("x", -560)
-        .attr("y", -435)
-        .style("font-size", "20px")
-        .style("font-weight", "bold")
-        .text(function(d) {d.variety})
-/*
-    bars.append('text')
-      .attr("x", 560)
-      .attr("y", 435)
-      .style("font-size", "20px")
-      .style("font-weight", "bold")
-      .text(function(d) {console.log(d); return d.rating})
-*/
       bars
           .attr("height", 50)
+          .attr("y", function(d) { return y(d.variety); })
+          .attr('transform', 'translate(135,' + 90 +")")
+          .attr("width", function(d) { return 0; } )
+          .attr('opacity', 0)
           .transition()
           .duration(800)
-          .attr('opacity', 1)
-          .attr("y", function(d) { return y(d.variety); })
-          .attr('transform', 'translate(120,' + 53 +")")
           .attr("width", function(d) { return x(d.rating);} )
+          .attr('opacity', 1)
           .style("fill", "steelblue")
 
     }
@@ -611,7 +630,9 @@
         return 0
       })
 
-      province_list = province_list.slice(0, 5)
+      if (province_list.length > 5) {
+        province_list = province_list.slice(0, 5)
+      }
       province_list.forEach(function(d, i) {
         d['rank'] = i
       })
@@ -648,7 +669,11 @@
         return 0
       })
 
-      variety_list = variety_list.slice(0, 5)
+      console.log(variety_list)
+
+      if (variety_list.length > 5) {
+        variety_list = variety_list.slice(0, 5)
+      }
       variety_list.forEach(function(d, i) {
         d['rank'] = i
       })

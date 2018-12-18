@@ -606,6 +606,9 @@
       province_filtered = country_filtered.filter(function(dd) { return dd.province == d.id})
       data = provinceStat(province_filtered)
 
+      var_data = data.slice(0, 5)
+      win_data = data.slice(5, 10)
+
       let x = d3.scale.linear()
           .range([0, 480])
 
@@ -620,20 +623,19 @@
           .scale(y)
           .orient("left")
 
-      xMax = d3.max(data, function(d) { return d.rating; })
       x.domain([80, 98])
-      y.domain(data.map(function(d) { return d.variety }))
+      y.domain(var_data.map(function(d) { return d.variety }))
 
       if (init) {
         init = false
 
         variety_plot.append('text')
-        .attr("x", 315)
+        .attr("x", 290)
         .attr("y", 30)
         .text(d.id)
         .attr('class', 'title')
         .style("font-weight", "bold")
-        .style("font-size","20px")
+        .style("font-size","25px")
         .style("font-family", "sans-serif");
 
         variety_plot.append('text')
@@ -641,15 +643,15 @@
         .attr("y", 65)
         .text("Variety")
         .style("font-weight", "bold")
-        .style("font-size","15px")
+        .style("font-size","20px")
         .style("font-family", "sans-serif");;
 
         variety_plot.append('text')
         .attr("x", 575)
-        .attr("y", 470)
+        .attr("y", 480)
         .text("Rating")
         .style("font-weight", "bold")
-        .style("font-size","15px")
+        .style("font-size","20px")
         .style("font-family", "sans-serif");
 
         variety_plot.append('g')
@@ -684,16 +686,16 @@
         .duration(400)
 
       variety_plot.selectAll('.title')
-        .attr("x", 315)
+        .attr("x", 290)
         .attr("y", 30)
         .text(d.id)
         .attr('class', 'title')
         .style("font-weight", "bold")
-        .style("font-size","20px")
+        .style("font-size","25px")
         .style("font-family", "sans-serif");
 
       let bars = variety_plot.selectAll('.bars')
-          .data(data, d=>d.variety)
+          .data(var_data, d=>d.variety)
 
       bars.exit()
           .remove()
@@ -721,9 +723,110 @@
           .attr('opacity', 1)
           .style("fill", "steelblue")
 
+          regionStat2(win_data)
+
     }
 
+    init2 = true
+    function regionStat2(win_data) {
 
+      let x = d3.scale.linear()
+          .range([0, 480])
+
+      let y = d3.scale.ordinal()
+          .rangeRoundBands([0, 350])
+
+      let xAxis = d3.svg.axis()
+          .scale(x)
+          .orient("bottom")
+
+      let yAxis = d3.svg.axis()
+          .scale(y)
+          .orient("left")
+
+      //xMax = d3.max(win_data, function(d) { return d.rating; })
+      x.domain([80, 98])
+      y.domain(win_data.map(function(d) { return d.winery }))
+
+      if (init2) {
+        init2 = false
+
+        winery_plot.append('text')
+        .attr("x", 63)
+        .attr("y", 65)
+        .text("Winery")
+        .style("font-family", "sans-serif")
+        .style("font-size", "20px")
+        .style("font-weight", "bold");
+
+        winery_plot.append('text')
+        .attr("x", 575)
+        .attr("y", 480)
+        .text("Rating")
+        .style("font-family", "sans-serif")
+        .style("font-size", "20px")
+        .style("font-weight", "bold");
+
+        winery_plot.append('g')
+          .attr('class', 'xaxis')
+
+        winery_plot.append('g')
+          .attr('class', 'yaxis')
+      }
+
+      winery_plot.selectAll('.xaxis')
+        .call(xAxis)
+        .attr('transform', 'translate(135,' + 430 +")")
+        .selectAll("text")
+        .style("font-size","12px")
+        .style("font-family", "sans-serif")
+        .transition()
+        .duration(400)
+
+      winery_plot.selectAll('.yaxis')
+        .call(yAxis)
+        .style('stroke', 'blue')
+        .style('stroke-width', '0.2px')
+        .attr('transform', 'rotate(-90)')
+        .attr('transform', 'translate(135,' + 80 +")")
+        .selectAll('text')
+          .attr("dx", ".4em")
+          .attr("dy", "-1.2em")
+          .attr('transform', 'rotate(-65)')
+          .style("font-size","12px")
+          .style("font-family", "sans-serif")
+        .transition()
+        .duration(400)
+
+      let bars = winery_plot.selectAll('.win_bars')
+          .data(win_data, d=>d.winery)
+   
+      bars.exit()
+          .remove()
+
+      bars.enter()
+          .append('rect')
+          .attr('class', 'win_bars')
+          .attr('transform', 'translate(135, 90)')
+          .attr("width", function(d) { return 0 } )
+          .style("fill", "steelblue")
+          .attr('opacity', 0)
+          .on('mousemove', barMouseOver)
+          .on("mouseout", barMouseOut)
+          .transition()
+
+      bars
+          .attr("height", 50)
+          .attr("y", function(d) { return y(d.winery); })
+          .attr('transform', 'translate(135,' + 90 +")")
+          .attr("width", function(d) { return 0; } )
+          .attr('opacity', 0)
+          .transition()
+          .duration(800)
+          .attr("width", function(d) { return x(d.rating);} )
+          .attr('opacity', 1)
+          .style("fill", "steelblue")
+    }
 
     // jhlim: below functions are fixed (no more changes needed)
     // draw countries color
@@ -1000,19 +1103,33 @@
     function provinceStat(data)  {
       let visited = d3.set()
       let variety_list = []
+      let visited_winery = d3.set()
+      let winery_list = []
       let rating_reducer = function (accumulator, currentValue) { return accumulator + (+currentValue.points) }
       let price_reducer = function (accumulator, currentValue) { return accumulator + (+currentValue.price) }
 
+      let rating, price
       data.forEach(function (d) {
         let variety = d.variety
         if (!visited.has(variety)) {
           visited.add(variety)
           let variety_data = data.filter(function(d) { return d.variety == variety })
 
-          let rating = d3.round(variety_data.reduce(rating_reducer, 0) / variety_data.length, 3)
-          let price = d3.round(variety_data.reduce(price_reducer, 0) / variety_data.length, 3)
+          rating = d3.round(variety_data.reduce(rating_reducer, 0) / variety_data.length, 3)
+          price = d3.round(variety_data.reduce(price_reducer, 0) / variety_data.length, 3)
 
           variety_list.push({'variety':variety, 'record_count':variety_data.length, 'rating': rating, 'price': price})
+        }
+
+        let winery = d.winery
+        if (!visited_winery.has(winery)) {
+          visited_winery.add(winery)
+          let winery_data = data.filter(function(d) { return d.winery == winery })
+
+          rating = d3.round(winery_data.reduce(rating_reducer, 0) / winery_data.length, 3)
+          price = d3.round(winery_data.reduce(price_reducer, 0) / winery_data.length, 3)
+
+          winery_list.push({'winery':winery, 'record_count':winery_data.length, 'rating':rating, 'price': price})
         }
       })
 
@@ -1024,7 +1141,13 @@
         return 0
       })
 
-      console.log(variety_list)
+      winery_list.sort(function (a, b) {
+        if (a.rating > b.rating)
+          return -1
+        if (a.rating < b.rating)
+          return 1
+        return 0
+      })
 
       if (variety_list.length > 5) {
         variety_list = variety_list.slice(0, 5)
@@ -1033,8 +1156,16 @@
         d['rank'] = i
       })
 
+      if (winery_list.length > 5) {
+        winery_list = winery_list.slice(0, 5)
+      }
+      winery_list.forEach(function(d, i) {
+        d['rank'] = i
+      })
+
+      let result = variety_list.concat(winery_list)
       // return top 5 varieties
-      return variety_list
+      return result
     }
   </script>
 </body>

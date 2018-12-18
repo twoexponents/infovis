@@ -176,6 +176,8 @@
 
     var currentCtr;
 
+    var fList;
+
     function linespace(start, end, n) {
       var out = [];
       var delta = (end - start) / (n - 1);
@@ -221,7 +223,8 @@
     var fullData;
 
     d3.select('#button').on('click', function(){
-
+        fList = filter(fullData);
+        console.log(fList);
     });
 
     // hmlee

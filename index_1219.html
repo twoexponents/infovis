@@ -240,9 +240,9 @@
     // Assume that filtered data is fed
     d3.json("data/wine_full.json", function(error, data) {
     	console.log("Load wine data json file.");
-          	
+
     	if(error) return console.error(error)
-          
+
     	fullData = data;
       drawing();
     });
@@ -264,7 +264,7 @@
           records["provinces"] = countryStatAll(country_id[i].id, temp);
           ctr_records.push(records);
       }
-            
+
 
         //country_stat = countryStat(country_filtered)
 
@@ -416,6 +416,10 @@
     }
 
     function countryChart(id){
+      if(getCountryData(id) === undefined) {
+        id = 'USA';
+      }
+      // console.log(getCountryData(id));
       var list = countryFilter(fList, id)
       var ffList = filter(list)
       var stat = countryStat(ffList);
@@ -449,11 +453,11 @@
       	  .append('text')
       	  .attr("id", 'pieTitle')
       	  .text(ffList[0].country)
-	  .style("font-size", "20px")
-	  .style("font-weight", "bold")
-	  .style("font-family", "sans-serif")
-	  .style("text-anchor", "middle")
-	  .attr("transform", translate(width/2, height/2));
+      	  .style("font-size", "20px")
+      	  .style("font-weight", "bold")
+      	  .style("font-family", "sans-serif")
+      	  .style("text-anchor", "middle")
+	        .attr("transform", translate(width/2, height/2));
 
       var g = svg.selectAll(".arc")
           .data(pie(stat), stat.province)
@@ -470,7 +474,13 @@
           .text(function(d) { return d.data.province; });
 
       //bar chart
-      var form = d3.select("#dimension");
+      var form = d3.select("#dimension").selectAll("input");
+      var form_val;
+      form.each(function(d){
+        if(d3.select(this).property('checked')){
+          form_val = d3.select(this).property('id')
+        }
+      })
 
       d3.selectAll("input[type=radio]")
       .on('change', change);
@@ -484,9 +494,17 @@
             .domain(stat.map(function(d) { return d.province; }))
             .rangeRoundBands([0, 500], .1);
 
-        var y = d3.scale.linear()
-            .domain([0, d3.max(stat, function(d) { return d.price; }) * 1.1])
-            .range([420, 0]);
+        var y;
+
+        if(form_val === 'price'){
+          y = d3.scale.linear()
+              .domain([0, d3.max(stat, function(d) { return d.price; }) * 1.1])
+              .range([420, 0]);
+        } else{
+          y = d3.scale.linear()
+              .domain([0, d3.max(stat, function(d) { return d.rating; }) * 1.1])
+              .range([420, 0]);
+        }
 
         var xAxis = d3.svg.axis()
             .scale(x)
@@ -511,39 +529,75 @@
             .style("font-size","12px")
             .style("font-family", "sans-serif");
 
-        var bar = chart.selectAll(".bar")
-            .data(stat, stat.province)
-            .enter().append("rect")
-            .attr("class", "bar")
-            .attr("x", function(d) { return x(d.province); })
-            .attr("y", function(d) { return y(d.price); })
-            .attr("width", x.rangeBand())
-            .attr("height", 0)
-            .style("fill", function(d) { return color(d.province); });
+        if(form_val === 'price'){
+          var bar = chart.selectAll(".bar")
+              .data(stat, stat.province)
+              .enter().append("rect")
+              .attr("class", "bar")
+              .attr("x", function(d) { return x(d.province); })
+              .attr("y", function(d) { return y(d.price); })
+              .attr("width", x.rangeBand())
+              .attr("height", 0)
+              .style("fill", function(d) { return color(d.province); });
 
-        bar.transition()
-            .duration(1000)
-            .ease("elastic")
-            .attr("y", function(d) { return y(d.price); })
-            .attr("height", function(d) { return 420 - y(d.price); })
+          bar.transition()
+              .duration(1000)
+              .ease("elastic")
+              .attr("y", function(d) { return y(d.price); })
+              .attr("height", function(d) { return 420 - y(d.price); })
 
-        var bText = chart.append("g")
-            .attr("class", "tvalues").selectAll(".tvalue").data(stat, stat.province);
+          var bText = chart.append("g")
+              .attr("class", "tvalues").selectAll(".tvalue").data(stat, stat.province);
 
-        bText.enter().append("text")
-            .attr("class", "tvalue")
-            .attr("x", function(d){return x(d.province);})
-            .attr("dy", ".95em")
-            .attr("dx", ".5em")
-            .attr("y", 0)
-            .text(function(d) { return d3.format("$.2f")(d.price);})
-            .style("font-family", "sans-serif")
-            .style("font-size","12px");
+          bText.enter().append("text")
+              .attr("class", "tvalue")
+              .attr("x", function(d){return x(d.province);})
+              .attr("dy", ".95em")
+              .attr("dx", ".5em")
+              .attr("y", 0)
+              .text(function(d) { return d3.format("$.2f")(d.price);})
+              .style("font-family", "sans-serif")
+              .style("font-size","12px");
 
-        bText.transition().duration(1000)
-            .attr("y", function(d){return y(d.price) ;});
+          bText.transition().duration(1000)
+              .attr("y", function(d){return y(d.price) ;});
 
-        d3.selectAll(".tvalues").attr("transform", "translate(" + 0 + "," + -30 + ")");
+          d3.selectAll(".tvalues").attr("transform", "translate(" + 0 + "," + -30 + ")");
+        } else{
+          var bar = chart.selectAll(".bar")
+              .data(stat, stat.province)
+              .enter().append("rect")
+              .attr("class", "bar")
+              .attr("x", function(d) { return x(d.province); })
+              .attr("y", function(d) { return y(d.rating); })
+              .attr("width", x.rangeBand())
+              .attr("height", 0)
+              .style("fill", function(d) { return color(d.province); });
+
+          bar.transition()
+              .duration(1000)
+              .ease("elastic")
+              .attr("y", function(d) { return y(d.rating); })
+              .attr("height", function(d) { return 420 - y(d.rating); })
+
+          var bText = chart.append("g")
+              .attr("class", "tvalues").selectAll(".tvalue").data(stat, stat.province);
+
+          bText.enter().append("text")
+              .attr("class", "tvalue")
+              .attr("x", function(d){return x(d.province);})
+              .attr("dy", ".95em")
+              .attr("dx", ".5em")
+              .attr("y", 0)
+              .text(function(d) { return d3.format("0.2f")(d.rating);})
+              .style("font-family", "sans-serif")
+              .style("font-size","12px");
+
+          bText.transition().duration(1000)
+              .attr("y", function(d){return y(d.rating) ;});
+
+          d3.selectAll(".tvalues").attr("transform", "translate(" + 0 + "," + -30 + ")");
+        }
 
         function change(){
           var value = this.id;
@@ -872,7 +926,11 @@
        if (init2) {
         init2 = false
 
+<<<<<<< HEAD
         winery_plot.append('text')
+=======
+	winery_plot.append('text')
+>>>>>>> b5704d2f6469f123d28d745cf7b27c6aa906637d
         .attr("x", 63)
         .attr("y", 65)
         .text("Winery")
@@ -905,6 +963,7 @@
         .duration(400)
 
       winery_plot.selectAll('.yaxis')
+<<<<<<< HEAD
         .call(yAxis)
         .style('stroke', 'blue')
         .style('stroke-width', '0.2px')
@@ -928,6 +987,16 @@
         })        .selectAll('text')
           .attr("x", "7")
           .attr("y", "-22")
+=======
+	.call(yAxis)
+        .style('stroke', 'blue')
+        .style('stroke-width', '0.2px')
+        .attr('transform', 'rotate(-90)')
+        .attr('transform', 'translate(135,' + 80 +")")
+        .selectAll('text')
+          .attr("dx", ".4em")
+          .attr("dy", "-1.2em")
+>>>>>>> b5704d2f6469f123d28d745cf7b27c6aa906637d
           .attr('transform', 'rotate(-65)')
           .style("font-size","14px")
           .style("font-family", "sans-serif")
@@ -1034,10 +1103,10 @@
 
     function showPointTooltip(d) {
       if(viewDegree === "region") {
-      label = d.province + '</br>' + 
-			  'records: ' + d.record_count + '</br>' +
-			  'ratings: ' + d.rating + '</br>' +
-			  'price: ' + d.price + '</br>';
+      label = '&nbsp&nbsp&nbsp' + d.province + '</br>' +
+			  'records: ' + d3.format(',')(d.record_count) + '</br>' +
+			  'ratings: ' + d3.format('.2f')(d.rating) + '</br>' +
+			  'price: ' + d3.format('.2f')(d.price) + '</br>';
         var mouse = d3.mouse(svg.node())
           .map( function(d) { return parseInt(d); })
         tooltip.classed("hidden", false)
@@ -1059,11 +1128,11 @@
         else {
           var avg_rating = d3.mean(data.values, d => d.points);
           var avg_price = d3.mean(data.values, d => d.price);
-          
-          label = '&nbsp&nbsp' + d.properties.name + '</br>' +
-                  'records: ' + data.values.length + '</br>' +
-                  'ratings: ' + avg_rating + '</br>' +
-                  'price: ' + avg_price + '</br>';
+
+          label = '&nbsp&nbsp&nbsp' + d.properties.name + '</br>' +
+                  'records: ' + d3.format(',')(data.values.length) + '</br>' +
+                  'ratings: ' + d3.format('.2f')(avg_rating) + '</br>' +
+                  'price: ' + d3.format('.2f')(avg_price) + '</br>';
         }
         var mouse = d3.mouse(svg.node())
           .map( function(d) { return parseInt(d); } );
@@ -1233,7 +1302,7 @@
       }
       return result;
     }
-   
+
 
     // hmlee
     // calculate statistic for specific country (ex. data which is filtered for USA)
@@ -1289,7 +1358,7 @@
       let price_reducer = function (accumulator, currentValue) { return accumulator + (+currentValue.price) }
 
       data.forEach(function(d) {
-        let prov = d.province 
+        let prov = d.province
         if (!visited.has(prov)) {
           visited.add(prov)
           let prov_data = data.filter(function(d) { return d.province == prov })

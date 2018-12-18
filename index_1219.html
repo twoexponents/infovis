@@ -27,7 +27,10 @@
     .hidden {
       display: none;
     }
-    .bars:hover {
+    .var_bars:hover {
+      filter: brightness(120%);
+    }
+    .win_bars:hover {
       filter: brightness(120%);
     }
     div.tooltip {
@@ -381,9 +384,27 @@
     }
 
     function barMouseOver(d) {
+
       d3.select(this.parentNode).append("text")
          .attr('x', 140)
-         .attr('y', d.rank * 70 + 122)
+         .attr('y', function() {
+            let margin;
+            if (d.total == 1) {
+              return d.rank * 70 + 122
+            }
+            if (d.total == 2) {
+              return d.rank * 174 + 122
+            }
+            if (d.total == 3) {
+              return d.rank * 116 + 122
+            }
+            if (d.total == 4) {
+              return d.rank * 87 + 122
+            }
+            else {
+              return d.rank * 70 + 122
+            }
+          })
          .style("font-family", "sans-serif")
          .style("font-size", "18px")
          .attr('class', 'barCount')
@@ -653,9 +674,9 @@
       var province_filtered = country_filtered.filter(function(dd) { return dd.province == rid })
 
       data = provinceStat(province_filtered)
-      let var_data = data.slice(0, 5)
-      let win_data = data.slice(5, 10)
-
+      let var_length = data[data.length-1]
+      let var_data = data.slice(0, var_length)
+      let win_data = data.slice(var_length, data.length-1)
 
       let x = d3.scale.linear()
           .range([0, 480])
@@ -713,7 +734,7 @@
         .call(xAxis)
         .attr('transform', 'translate(135,' + 430 +")")
         .selectAll("text")
-        .style("font-size","12px")
+        .style("font-size","14px")
         .style("font-family", "sans-serif")
         .transition()
         .duration(400)
@@ -723,12 +744,28 @@
         .style('stroke', 'blue')
         .style('stroke-width', '0.2px')
         .attr('transform', 'rotate(-90)')
-        .attr('transform', 'translate(135,' + 80 +")")
+        .attr('transform', function() {
+          if (var_length == 1) {
+            return 'translate(135,' + -60 +")"
+          }
+          if (var_length == 2) {
+            return 'translate(135,' + 30 +")"
+          }
+          if (var_length == 3) {
+            return 'translate(135,' + 57 +")"
+          }
+          if (var_length == 4) {
+            return 'translate(135,' + 72 +")"
+          }
+          else {
+            return 'translate(135,' + 82 +")"
+          }
+        })
         .selectAll('text')
-          .attr("dx", ".4em")
-          .attr("dy", "-1.2em")
+          .attr("x", "7")
+          .attr("y", "-22")
           .attr('transform', 'rotate(-65)')
-          .style("font-size","12px")
+          .style("font-size","14px")
           .style("font-family", "sans-serif")
         .transition()
         .duration(400)
@@ -742,7 +779,34 @@
         .style("font-size","25px")
         .style("font-family", "sans-serif");
 
-      let bars = variety_plot.selectAll('.bars')
+      var bText = variety_plot
+        .selectAll(".tvalue")
+        .data(var_data, d => d.variety);
+
+      bText.exit()
+           .remove()
+
+      bText.enter().append("text")
+           .attr("class", "tvalue")
+           .attr("y", function(d){return y(d.variety);})
+           .attr("x", function(d){ return 0 ;})
+           .attr("transform", "translate(" + 140 + "," + 116 + ")")
+           .text(function(d) { return d3.format(".2f")(d.rating);})
+           .style("font-family", "sans-serif")
+           .style("font-size","12px")
+            .attr('opacity', 0)
+
+      bText
+           .attr("transform", "translate(" + 140 + "," + 116 + ")")
+           .attr("y", function(d){return y(d.variety);})
+           .attr('opacity', 0)
+           .transition()
+           .duration(800)
+           .attr('opacity', 1)
+           .text(function(d) { return d3.format(".2f")(d.rating);})
+           .attr("x", function(d){ return x(d.rating) ;})
+
+      let bars = variety_plot.selectAll('.var_bars')
           .data(var_data, d=>d.variety)
 
       bars.exit()
@@ -750,11 +814,24 @@
 
       bars.enter()
           .append('rect')
-          .attr('class', 'bars')
+          .attr('class', 'var_bars')
           .attr('transform', 'translate(135, 90)')
           .attr("width", function(d) { return 0 } )
-	  .style("fill", function(d) { return regionStatColor(d.variety); })
+          .style("fill", function(d) { return regionStatColor(d.variety); })
+          //.style("fill", "#7b6888")
           .attr('opacity', 0)
+       /*   .on('mouseover', function(d) {
+            d3.selectAll('.win_bars')
+              .style('filter', function(dd) {
+                console.log(dd)
+                if (dd.variety == d.variety) {
+                  return 'brightess(120%)';
+                }
+                else {
+                  return null;
+                }
+              })
+          })*/
           .on('mousemove', barMouseOver)
           .on("mouseout", barMouseOut)
           .transition()
@@ -769,9 +846,10 @@
           .duration(800)
           .attr("width", function(d) { return x(d.rating);} )
           .attr('opacity', 1)
-	  .style("fill", function(d) { return regionStatColor(d.variety); });
+          .style("fill", function(d) { return regionStatColor(d.variety); });
 
-      regionStat2(win_data)
+          regionStat2(win_data)
+
 
     }
 
@@ -790,76 +868,115 @@
       //xMax = d3.max(win_data, function(d) { return d.rating; }
       x.domain([80, 98])
       y.domain(win_data.map(function(d) { return d.winery }))
-      if (init2) {
+
+       if (init2) {
         init2 = false
-        
-	winery_plot.append('text')
+
+        winery_plot.append('text')
         .attr("x", 63)
         .attr("y", 65)
         .text("Winery")
         .style("font-family", "sans-serif")
         .style("font-size", "20px")
-	.style("font-weight", "bold");
+        .style("font-weight", "bold");
 
-	winery_plot.append('text')
-	  .attr("x", 575)
-	  .attr("y", 480)
-	  .text("Rating")
-	  .style("font-family", "sans-serif")
-	  .style("font-size", "20px")
-	  .style("font-weight", "bold");
+        winery_plot.append('text')
+        .attr("x", 575)
+        .attr("y", 480)
+        .text("Rating")
+        .style("font-family", "sans-serif")
+        .style("font-size", "20px")
+        .style("font-weight", "bold");
 
         winery_plot.append('g')
-	  .attr('class', 'xaxis')
+          .attr('class', 'xaxis')
 
-	winery_plot.append('g')
-	  .attr('class', 'yaxis')
+        winery_plot.append('g')
+          .attr('class', 'yaxis')
       }
-                                                                                                                                       
-      winery_plot.selectAll('.xaxis')                                                                                                
+
+      winery_plot.selectAll('.xaxis')
         .call(xAxis)
         .attr('transform', 'translate(135,' + 430 +")")
         .selectAll("text")
-	.style("font-size", "12px")
-	.style("font-family", "sans-serif")
-	.transition()
+        .style("font-size","14px")
+        .style("font-family", "sans-serif")
+        .transition()
         .duration(400)
 
       winery_plot.selectAll('.yaxis')
-	.call(yAxis)                                                                                                                 
-        .style('stroke', 'blue')                                                                                                     
-        .style('stroke-width', '0.2px')                                                                                             
-        .attr('transform', 'rotate(-90)')                                                                                        
-        .attr('transform', 'translate(135,' + 80 +")")                                                                            
-        .selectAll('text')                                                                                                         
-          .attr("dx", ".4em")                                                                                                        
-          .attr("dy", "-1.2em")
+        .call(yAxis)
+        .style('stroke', 'blue')
+        .style('stroke-width', '0.2px')
+        .attr('transform', 'rotate(-90)')
+        .attr('transform', function() {
+          if (win_data.length == 1) {
+            return 'translate(135,' + -60 +")"
+          }
+          if (win_data.length == 2) {
+            return 'translate(135,' + 30 +")"
+          }
+          if (win_data.length == 3) {
+            return 'translate(135,' + 57 +")"
+          }
+          if (win_data.length == 4) {
+            return 'translate(135,' + 72 +")"
+          }
+          else {
+            return 'translate(135,' + 82 +")"
+          }
+        })        .selectAll('text')
+          .attr("x", "7")
+          .attr("y", "-22")
           .attr('transform', 'rotate(-65)')
-          .style("font-size","12px")
+          .style("font-size","14px")
           .style("font-family", "sans-serif")
+        .transition()
+        .duration(400)
+
+      var bText = winery_plot
+        .selectAll(".tvalue")
+        .data(win_data, d => d.winery);
+
+      bText.exit()
+           .remove()
+
+      bText.enter().append("text")
+           .attr("class", "tvalue")
+           .attr("y", function(d){return y(d.winery);})
+           .attr("x", function(d){ return 0 ;})
+           .attr("transform", "translate(" + 140 + "," + 116 + ")")
+           .text(function(d) { return d3.format(".2f")(d.rating); })
+           .style("font-family", "sans-serif")
+           .style("font-size","12px")
+
+      bText.transition()
+           .duration(800)
+           .text(function(d) { return d3.format(".2f")(d.rating); })
+           .attr("y", function(d){return y(d.winery);})
+           .attr("x", function(d){ return x(d.rating) ;})
+           .attr("transform", "translate(" + 140 + "," + 116 + ")")
+
+      let bars = winery_plot.selectAll('.win_bars')
+          .data(win_data, d=>d.winery)
+   
+      bars.exit()
+          .remove()
+
+      bars.enter()
+          .append('rect')
+          .attr('class', 'win_bars')
+          .attr('transform', 'translate(135, 90)')
+          .attr("width", function(d) { return 0 } )
+          .style("fill", function(d) { return regionStatColor(d.winery); })
+          .attr('opacity', 0)
+          .on('mousemove', barMouseOver)
+          .on("mouseout", barMouseOut)
           .transition()
-          .duration(400)
 
-	let bars = winery_plot.selectAll('.win_bars')
-	    .data(win_data, d=>d.winery)
-
-	bars.exit()
-	    .remove()
-
-	bars.enter()
-	    .append('rect')
-	    .attr('class', 'win_bars')
-	    .attr('transform', 'translate(135, 90)')
-	    .attr("width", function(d) { return 0 } )
-	    .style("fill", function(d) { return regionStatColor(d.winery); })
-	    .attr('opacity', 0)
-	    .on('mousemove', barMouseOver)
-	    .on("mouseout", barMouseOut)
-	    .transition()
-
-	bars
-	  .attr("height", 50)
-	  .attr("y", function(d) { return y(d.winery); })
+      bars
+          .attr("height", 50)
+          .attr("y", function(d) { return y(d.winery); })
           .attr('transform', 'translate(135,' + 90 +")")
           .attr("width", function(d) { return 0; } )
           .attr('opacity', 0)
@@ -867,7 +984,7 @@
           .duration(800)
           .attr("width", function(d) { return x(d.rating);} )
           .attr('opacity', 1)
-	  .style("fill", function(d) { return regionStatColor(d.winery); })
+          .style("fill", function(d) { return regionStatColor(d.winery); })
     }
 
 
@@ -1220,7 +1337,7 @@
           variety_list.push({'variety':variety, 'record_count':variety_data.length, 'rating': rating, 'price': price})
         }
 
-	let winery = d.winery
+      	let winery = d.winery
         if (!visited_winery.has(winery)) {
           visited_winery.add(winery)
           let winery_data = data.filter(function(d) { return d.winery == winery })
@@ -1253,6 +1370,7 @@
       }
       variety_list.forEach(function(d, i) {
         d['rank'] = i
+        d['total'] = variety_list.length
       })
 
       if (winery_list.length > 5) {
@@ -1260,9 +1378,11 @@
       }
       winery_list.forEach(function(d, i) {
         d['rank'] = i
+        d['total'] = winery_list.length
       })
 
       let result = variety_list.concat(winery_list)
+      result.push(variety_list.length)
       // return top 5 varieties
       return result
     }

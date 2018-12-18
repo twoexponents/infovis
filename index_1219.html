@@ -395,6 +395,10 @@
     }
 
     function countryChart(id){
+      if(getCountryData(id) === undefined) {
+        id = 'USA';
+      }
+      // console.log(getCountryData(id));
       var list = countryFilter(fList, id)
       var ffList = filter(list)
       var stat = countryStat(ffList);
@@ -917,10 +921,10 @@
 
     function showPointTooltip(d) {
       if(viewDegree === "region") {
-      label = d.province + '</br>' + 
-			  'records: ' + d.record_count + '</br>' +
-			  'ratings: ' + d.rating + '</br>' +
-			  'price: ' + d.price + '</br>';
+      label = '&nbsp&nbsp&nbsp' + d.province + '</br>' + 
+			  'records: ' + d3.format(',')(d.record_count) + '</br>' +
+			  'ratings: ' + d3.format('.2f')(d.rating) + '</br>' +
+			  'price: ' + d3.format('.2f')(d.price) + '</br>';
         var mouse = d3.mouse(svg.node())
           .map( function(d) { return parseInt(d); })
         tooltip.classed("hidden", false)
@@ -943,10 +947,10 @@
           var avg_rating = d3.mean(data.values, d => d.points);
           var avg_price = d3.mean(data.values, d => d.price);
           
-          label = '&nbsp&nbsp' + d.properties.name + '</br>' +
-                  'records: ' + data.values.length + '</br>' +
-                  'ratings: ' + avg_rating + '</br>' +
-                  'price: ' + avg_price + '</br>';
+          label = '&nbsp&nbsp&nbsp' + d.properties.name + '</br>' +
+                  'records: ' + d3.format(',')(data.values.length) + '</br>' +
+                  'ratings: ' + d3.format('.2f')(avg_rating) + '</br>' +
+                  'price: ' + d3.format('.2f')(avg_price) + '</br>';
         }
         var mouse = d3.mouse(svg.node())
           .map( function(d) { return parseInt(d); } );

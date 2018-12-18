@@ -232,7 +232,8 @@
     d3.json("data/wine_full.json", function(error, data) {
 
       if(error) return console.error(error)
-      ctr_code = "USA"
+     
+     /* ctr_code = "USA"
       //data = data.slice(0, 1000)
       country_filtered = data.filter(function(d) { return d.ctr_code == ctr_code })
       country_stat = countryStat(country_filtered)
@@ -240,7 +241,7 @@
       province = 'California'
       province_filtered = country_filtered.filter(function(d) { return d.province == province})
      // province_stat = provinceStat(province_filtered)
-
+*/
       fullData = data;
     })
 
@@ -609,13 +610,20 @@
     }
 
     let init = true;
-    function regionStat(d) {
+    function regionStat(id) {
 
-      province_filtered = country_filtered.filter(function(dd) { return dd.province == d.id})
-      data = provinceStat(province_filtered)
+      if (fList == undefined) {
+          fList = fullData
+      }
+      var country_filtered = countryFilter(fList, 'USA')
+      var province_filtered = country_filtered.filter(function(dd) { return dd.province == id })
 
-      var_data = data.slice(0, 5)
-      win_data = data.slice(5, 10)
+      data = provinceStat(province_filtered);
+      //province_filtered = country_filtered.filter(function(dd) { return dd.province == d.id})
+      //data = provinceStat(province_filtered)
+
+      let var_data = data.slice(0, 5)
+      let win_data = data.slice(5, 10)
 
       let x = d3.scale.linear()
           .range([0, 480])
@@ -640,7 +648,7 @@
         variety_plot.append('text')
         .attr("x", 290)
         .attr("y", 30)
-        .text(d.id)
+        .text(id)
         .attr('class', 'title')
         .style("font-weight", "bold")
         .style("font-size","25px")
@@ -696,7 +704,7 @@
       variety_plot.selectAll('.title')
         .attr("x", 290)
         .attr("y", 30)
-        .text(d.id)
+        .text(id)
         .attr('class', 'title')
         .style("font-weight", "bold")
         .style("font-size","25px")
@@ -713,7 +721,7 @@
           .attr('class', 'bars')
           .attr('transform', 'translate(135, 90)')
           .attr("width", function(d) { return 0 } )
-          .style("fill", "steelblue")
+          .style("fill", "#7b6888")
           .attr('opacity', 0)
           .on('mousemove', barMouseOver)
           .on("mouseout", barMouseOut)
@@ -729,7 +737,7 @@
           .duration(800)
           .attr("width", function(d) { return x(d.rating);} )
           .attr('opacity', 1)
-          .style("fill", "steelblue")
+          .style("fill", "#7b6888")
 
           regionStat2(win_data)
 
@@ -868,7 +876,8 @@
             return 'translate(' + temp + ')'})
           .on("click", function(d, i) {
             selected;
-            regionStat(d);
+            regionStat(d.id)
+            //regionStat(d.country, d.province);
           })
           .on("mousemove", showPointTooltip)
           .on("mouseout",  function(d,i) {

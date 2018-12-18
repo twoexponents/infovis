@@ -7,9 +7,16 @@
     body {
       background-color: white;
     }
+    .axis path,
+    .axis line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+      stroke-width: 1px;
+    }
     svg {
       border: 1px solid black;
-      background-color: white;
+      /*background-color: white;*/
       position: absolute;
     }
     .boundary {
@@ -34,6 +41,10 @@
       text-shadow: #f5f5f5 0 1px 0;
       opacity: 0.9;
       z-index: 10;
+      position: absolute;
+    }
+    #legend-svg {
+      vertical-align: top;
       position: absolute;
     }
   </style>
@@ -278,6 +289,7 @@
       let xAxis = d3.svg.axis()
           .scale(x)
           .orient("bottom")
+
       let yAxis = d3.svg.axis()
           .scale(y)
           .orient("left")
@@ -317,7 +329,7 @@
         .duration(400)
 
       below_plot.selectAll('.y-axis')
-        .call(yAxis)
+        .call(yAxis).style('stroke', 'blue')
         .attr('transform', 'rotate(-90)')
         .attr('transform', 'translate(120,' + 40 +")")
         .selectAll('text')
@@ -502,6 +514,66 @@
            temp = projection([+d.longitude, +d.latitude]);
            return 'translate(' + temp + ')'})
     }
+
+    var legendFullHeight = 150;
+    var legendFullWidth = 50;
+    var legendMargin = { top: 20, bottom: 20, left: 10, right: 10};
+    var legendWidth = legendFullWidth - legendMargin.left - legendMargin.right;
+    var legendHeight = legendFullHeight - legendMargin.top - legendMargin.bottom;
+
+    var legendSvg = d3.select('body').append('svg').style('border', '0px')
+      .style('top', '500px')
+      .style('left', '14px')
+      .attr('opacity', 0.8)
+      .attr('width', legendFullWidth+20)
+      .attr('height', legendFullHeight)
+      .append('g')
+      .attr('transform', 'translate(' + legendMargin.left + ',' +
+      legendMargin.top + ')');
+
+    var gradient = legendSvg.append('defs')
+      .append('linearGradient')
+      .attr('id', 'gradient')
+      .attr('x1', '0%')
+      .attr('y1', '100%')
+      .attr('x2', '0%')
+      .attr('y2', '0%')
+      .attr('spreadMethod', 'pad');
+
+    var pct = linespace(0, 100, myColorScales.length).map(function(d) { return Math.round(d) + '%'; });
+
+    var colourPct = d3.zip(pct, myColorScales);
+
+    colourPct.forEach(function(d) {
+        gradient.append('stop')
+            .attr('offset', d[0])
+            .attr('stop-color', d[1])
+            .attr('stop-opacity', 1);
+    });
+
+    legendSvg.append('rect')
+        .attr('x1', 0)
+        .attr('y1', 1000)
+        .attr('width', legendWidth)
+        .attr('height', legendHeight)
+        .style('fill', 'url(#gradient)');
+
+    // create a scale and axis for the legend
+    var legendScale = d3.scale.linear()
+        .domain([1, d3.max(countryData, d=>Math.log(+d.nums))])
+        .range([legendHeight, 0]);
+
+    var legendAxis = d3.svg.axis()
+        .scale(legendScale)
+        .orient("right")
+        .ticks(5, 2);
+
+    legendSvg.append("g")
+        .attr("class", "legend axis")
+        .attr("transform", "translate(" + legendWidth + ", 0)")
+        .call(legendAxis);
+
+
 
     // hmlee
     // calculate statistic for specific country (ex. data which is filtered for USA)

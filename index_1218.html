@@ -174,6 +174,8 @@
       d3.select("text#slider").text(point);
     });
 
+    var currentCtr;
+
     function linespace(start, end, n) {
       var out = [];
       var delta = (end - start) / (n - 1);
@@ -217,6 +219,10 @@
                  {"id": "California", "latitude": "38.44368", "longitude": "-123.12019", "price": "69", "point": "83", "nums": "200"}];
 
     var fullData;
+
+    d3.select('#button').on('click', function(){
+
+    });
 
     // hmlee
     // Assume that filtered data is fed
@@ -390,7 +396,7 @@
           .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
       var g = svg.selectAll(".arc")
-          .data(pie(stat))
+          .data(pie(stat), stat.province)
           .enter().append("g")
           .attr("class", "arc");
 
@@ -796,7 +802,12 @@
 
     function selected(d) {
       console.log(d);
-      countryChart(d.id);
+      if(currentCtr !== d.id){
+        currentCtr = d.id;
+        country_plot1.selectAll('g').remove();
+        country_plot2.selectAll('g').remove();
+        countryChart(d.id);
+      }
       if(viewDegree === "country") {
         countryFill();
         d3.select(this)
@@ -910,7 +921,6 @@
         .attr("transform", "translate(" + legendWidth + ", 0)")
         .call(legendAxis);
 
-
     //filter for a specific country
     function countryFilter(data, ctr_code){
       var result = data.filter(function(d) { return d.ctr_code == ctr_code })
@@ -919,7 +929,15 @@
     }
 
     //filter for points and price
-    function filter(data, min, max, point){
+    function filter(data){
+      var min = d3.select('#min');
+      var max = d3.select('#max');
+      d3.select("text#slider").text(point);
+
+      var m1 = Number(min.property('value'));
+      var m2 = Number(max.property('value'));
+      var r = Number(d3.select("text#slider").text());
+
       var result = [];
 
       data.forEach(function(d){

@@ -393,6 +393,16 @@
           .append("g")
           .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
+      var title = country_plot1
+          .append('text')
+          .attr("id", 'pieTitle')
+          .text(fList[0].country)
+          .style("font-size","20px")
+          .style("font-weight", "bold")
+          .style("font-family", "sans-serif")
+          .style("text-anchor", "middle")
+          .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
       var g = svg.selectAll(".arc")
           .data(pie(stat), stat.province)
           .enter().append("g")
@@ -409,7 +419,6 @@
 
       //bar chart
       var form = d3.select("#dimension");
-      form.style("visibility", "visible");
 
       d3.selectAll("input[type=radio]")
       .on('change', change);
@@ -907,6 +916,7 @@
       if(currentCtr !== d.id){
         currentCtr = d.id;
         country_plot1.selectAll('g').remove();
+        country_plot1.selectAll('text').remove();
         country_plot2.selectAll('g').remove();
         countryChart(d.id);
       }
@@ -1040,11 +1050,19 @@
 
       var result = [];
 
-      data.forEach(function(d){
-        if(d.price <= max && d.price >= min && d.points >= rating){
-          result.push(d);
-        }
-      })
+      if(max === 0){
+        data.forEach(function(d){
+          if(d.points >= rating){
+            result.push(d);
+          }
+        })
+      } else{
+        data.forEach(function(d){
+          if(d.price <= max && d.price >= min && d.points >= rating){
+            result.push(d);
+          }
+        })
+      }
       return result;
     }
 

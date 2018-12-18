@@ -609,6 +609,8 @@
 
     }
 
+    var regionStatColor = d3.scale.ordinal()
+         .range(["#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c"]);
     let init = true;
     function regionStat(id) {
 
@@ -721,7 +723,8 @@
           .attr('class', 'bars')
           .attr('transform', 'translate(135, 90)')
           .attr("width", function(d) { return 0 } )
-          .style("fill", "#7b6888")
+          .style("fill", function(d) { return regionStatColor(d.variety); })
+          //.style("fill", "#7b6888")
           .attr('opacity', 0)
           .on('mousemove', barMouseOver)
           .on("mouseout", barMouseOut)
@@ -737,7 +740,8 @@
           .duration(800)
           .attr("width", function(d) { return x(d.rating);} )
           .attr('opacity', 1)
-          .style("fill", "#7b6888")
+          .style("fill", function(d) { return regionStatColor(d.variety); });
+          //.style("fill", "#7b6888")
 
           regionStat2(win_data)
 
@@ -825,7 +829,7 @@
           .attr('class', 'win_bars')
           .attr('transform', 'translate(135, 90)')
           .attr("width", function(d) { return 0 } )
-          .style("fill", "steelblue")
+          .style("fill", function(d) { return regionStatColor(d.winery); })
           .attr('opacity', 0)
           .on('mousemove', barMouseOver)
           .on("mouseout", barMouseOut)
@@ -841,7 +845,7 @@
           .duration(800)
           .attr("width", function(d) { return x(d.rating);} )
           .attr('opacity', 1)
-          .style("fill", "steelblue")
+          .style("fill", function(d) { return regionStatColor(d.winery); })
     }
 
     // jhlim: below functions are fixed (no more changes needed)

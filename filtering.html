@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+  </head>
+  <body>
+    <style>
+      .arc text {
+      font: 10px sans-serif;
+      text-anchor: middle;
+      }
+
+      .arc path {
+      stroke: #fff;
+      }
+
+      .pText text{
+        font: 14px sans-serif;
+        text-anchor: middle;
+        padding-right: 10px;
+      }
+
+      .values text{
+        font: sans-serif;
+      }
+
+      .xaxis line {
+        fill: none;
+        stroke: #999;
+        stroke-width: 1px;
+        shape-rendering: crispEdges;
+      }
+
+      .xaxis path {
+        fill: none;
+        stroke: none;
+      }
+
+      .yaxis line {
+        fill: none;
+        stroke: #999;
+        stroke-width: 1px;
+        shape-rendering: crispEdges;
+      }
+
+      .yaxis path {
+        fill: none;
+        stroke: none;
+      }
+
+    </style>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+
+    <div id="plot" style="display:flex; flex-direction: row; flex-end: center; align-items: center">
+      <p class="pText"><text>Rating</text>
+      <input type="range" min="0" max="100" step="1" value="50" id="range" style="vertical-align: middle"/>
+      <text class="pText" id="slider">50</text>
+      </p>
+      <p class="pText"><text>Price</text>
+      <input id="min" class="select" type="number" placeholder="minimum price" name="min"/> ~
+      <input id="max" class="select" type="number" placeholder="maximum price" name="max"/>
+      </p>
+      <input type="button" value="SEARCH" id="button"/>
+    </div>
+    <div id="piechart"></div>
+    <form id="dimension" style="visibility: hidden">
+      <input type='radio' id="price" name="mode" checked="true"><text style="font-family: sans-serif">price</text></input>
+      <input type='radio' id="rating" name="mode" ><text style="font-family: sans-serif">rating</text></input>
+    </form>
+    <div id="barchart"></div>
+    <script>
+      var margin = {top: 50, right: 50, bottom: 50, left: 50};
+
+      var min = d3.select('#min');
+      var max = d3.select('#max');
+
+      d3.json("data/wine_9996_ver2.json", function(error, data){
+
+        d3.select("input[type=range]#range").on("input", function() {
+          var point;
+          point = this.value;
+          d3.select("text#slider").text(point);
+        });
+
+        d3.select('#button').on('click', function(){
+          var m1 = Number(min.property('value'));
+          var m2 = Number(max.property('value'));
+          var r = Number(d3.select("text#slider").text());
+
+          var country = "Italy";
+          var countrylist = countryFilter(data, country);
+
+          //var result = filter(data, m1, m2, r);
+          var stat = countryStat(countrylist);
+
+          //pie chart
+          var width = 960,
+          height = 450,
+          radius = Math.min(width, height) / 2;
+
+          var color = d3.scale.ordinal()
+              .range(["#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c"]);
+
+          var arc = d3.svg.arc()
+              .outerRadius(radius)
+              .innerRadius(radius * 0.4);
+
+          var labelArc = d3.svg.arc()
+              .outerRadius(radius * 0.5)
+              .innerRadius(radius);
+
+          var pie = d3.layout.pie()
+              .sort(null)
+              .value(function(d) { return d.record_count; });
+
+          var svg = d3.select("#piechart").append("svg")
+              .attr("width", width)
+              .attr("height", height)
+              .attr("id", country)
+              .append("g")
+              .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+          var g = svg.selectAll(".arc")
+              .data(pie(stat))
+              .enter().append("g")
+              .attr("class", "arc");
+
+          g.append("path")
+              .attr("d", arc)
+              .style("fill", function(d) { return color(d.data.province); });
+
+          g.append("text")
+              .attr("transform", function(d) { return "translate(" + labelArc.centroid(d) + ")"; })
+              .attr("dy", ".3em")
+              .text(function(d) { return d.data.province; });
+
+          //bar chart
+          var form = d3.select("#dimension");
+          form.style("visibility", "visible");
+
+          d3.selectAll("input[type=radio]")
+          .on('change', change);
+
+          var chart = d3.select("#barchart")
+                .append('svg')
+                .attr("width", 600)
+                .attr("height", 600)
+                .append("g")
+                .attr("id", "bars")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var x = d3.scale.ordinal()
+                .domain(stat.map(function(d) { return d.province; }))
+                .rangeRoundBands([0, 500], .1);
+
+            var y = d3.scale.linear()
+                .domain([0, d3.max(stat, function(d) { return d.price; }) * 1.1])
+                .range([450, 0]);
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .orient("bottom");
+
+            var yAxis = d3.svg.axis()
+                .scale(y)
+                .orient("left");
+
+            chart.append("g")
+                .attr("class", "xaxis")
+                .attr("transform", "translate(0," + 450 + ")")
+                .call(xAxis)
+                .selectAll("text")
+                .style("font-size","12px")
+                .style("font-family", "sans-serif");
+
+            chart.append("g")
+                .attr("class", "yaxis")
+                .call(yAxis)
+                .selectAll("text")
+                .style("font-size","12px")
+                .style("font-family", "sans-serif");
+
+            var bar = chart.selectAll(".bar")
+                .data(stat, stat.province)
+                .enter().append("rect")
+                .attr("class", "bar")
+                .attr("x", function(d) { return x(d.province); })
+                .attr("y", function(d) { return y(d.price); })
+                .attr("width", x.rangeBand())
+                .attr("height", 0)
+                .style("fill", function(d) { return color(d.province); });
+
+            bar.transition()
+                .duration(1000)
+                .ease("elastic")
+                .attr("y", function(d) { return y(d.price); })
+                .attr("height", function(d) { return height - y(d.price); })
+
+            var bText = chart.append("g")
+                .attr("class", "tvalues").selectAll(".tvalue").data(stat, stat.province);
+
+            bText.enter().append("text")
+                .attr("class", "tvalue")
+                .attr("x", function(d){return x(d.province);})
+                .attr("dy", ".95em")
+                .attr("dx", ".5em")
+                .attr("y", 0)
+                .text(function(d) { return d3.format("$.2f")(d.price);})
+                .style("font-family", "sans-serif")
+                .style("font-size","12px");
+
+            bText.transition().duration(1000)
+                .attr("y", function(d){return y(d.price) ;});
+
+            d3.selectAll(".tvalues").attr("transform", "translate(" + 0 + "," + -30 + ")");
+
+            function change(){
+            	var value = this.id;
+
+              var chart = d3.select("#bars")
+
+              var x = d3.scale.ordinal()
+                  .domain(stat.map(function(d) { return d.province; }))
+                  .rangeRoundBands([0, 500], .1);
+
+              var y;
+
+              if(value == "price"){
+                y = d3.scale.linear()
+                    .domain([0, d3.max(stat, function(d) { return d.price; }) * 1.1])
+                    .range([450, 0]);
+              } else{
+                y = d3.scale.linear()
+                    .domain([70, d3.max(stat, function(d) { return d.rating; }) * 1.1])
+                    .range([450, 0]);
+              }
+
+              var xAxis = d3.svg.axis()
+                  .scale(x)
+                  .orient("bottom");
+
+              var yAxis = d3.svg.axis()
+                  .scale(y)
+                  .orient("left");
+
+              chart.select(".xaxis")
+                  .transition().duration(1000)
+                  .call(xAxis)
+                  .selectAll("text")
+                  .style("font-size","12px")
+                  .style("font-family", "sans-serif");
+
+              chart.select(".yaxis")
+                  .transition().duration(1000)
+                  .call(yAxis)
+                  .selectAll("text")
+                  .style("font-size","12px")
+                  .style("font-family", "sans-serif");
+
+              var bar = chart.selectAll(".bar")
+                  .data(stat, stat.province);
+
+              if(value == "price"){
+                bar.enter().append("rect")
+                    .attr("class", "bar")
+                    .attr("x", function(d) { return x(d.province); })
+                    .attr("y", function(d) { return y(d.price); })
+                    .attr("width", x.rangeBand())
+                    .attr("height", 0)
+                    .transition().duration(1000)
+                    .style("fill", function(d) { return color(d.province); });
+
+                bar.each(function(d){
+                  d3.select(this).transition().duration(1000)
+                    .attr("y", function(d) { return y(d.price); })
+                    .attr("height", function(d) { return height - y(d.price); })
+                })
+
+                var text = chart.selectAll(".tvalue")
+                    .transition().duration(1000)
+                    .attr("x", function(d){ return x(d.province);})
+                    .attr("y", function(d){return y(d.price) ;})
+                    .text(function(d) { return d3.format("$.2f")(d.price);})
+                    .style("font-family", "sans-serif")
+                    .style("font-size","12px");
+
+                text.each(function(d){
+                  d3.select(this).transition().duration(1000)
+                    .attr("y", function(d){return y(d.price) ;})
+                    .text(function(d) { return d3.format("$.2f")(d.price);})
+                })
+
+                d3.selectAll(".tvalues").attr("transform", "translate(" + 0 + "," + -30 + ")");
+
+              } else{
+                bar.enter().append("rect")
+                    .attr("class", "bar")
+                    .attr("x", function(d) { return x(d.province); })
+                    .attr("y", function(d) { return y(d.rating); })
+                    .attr("width", x.rangeBand())
+                    .attr("height", 0)
+                    .transition().duration(1000)
+                    .style("fill", function(d) { return color(d.province); });
+
+                bar.each(function(d){
+                  d3.select(this).transition()
+                    .duration(1000)
+                    .attr("y", function(d) { return y(d.rating); })
+                    .attr("height", function(d) { return height - y(d.rating); })
+                })
+
+                var text = chart.selectAll(".tvalue")
+                    .transition().duration(1000)
+                    .attr("x", function(d){ return x(d.province);})
+                    .attr("y", function(d){return y(d.rating) ;})
+                    .text(function(d) { return d3.format("0.2f")(d.rating);})
+                    .style("font-family", "sans-serif")
+                    .style("font-size","12px");
+
+                text.each(function(d){
+                  d3.select(this).transition().duration(1000)
+                    .attr("y", function(d){return y(d.rating) ;})
+                    .text(function(d) { return d3.format("0.2f")(d.rating);})
+                })
+
+                d3.selectAll(".tvalues").attr("transform", "translate(" + 0 + "," + -30 + ")");
+              }
+            }
+        });
+      });
+
+      //filter for a specific country
+      function countryFilter(data, country){
+        var result = [];
+
+        data.forEach(function(d){
+          if(d.country === country){
+            result.push(d);
+          }
+        })
+
+        return result;
+      }
+
+      //filter for points and price
+      function filter(data, min, max, point){
+        var result = [];
+
+        data.forEach(function(d){
+          if(d.price <= max && d.price >= min && d.points >= point){
+            result.push(d);
+          }
+        })
+
+        return result;
+      }
+
+      function countryStat(data) {
+
+        let visited = d3.set()
+        let province_list = []
+        let rating_reducer = function (accumulator, currentValue) { return accumulator + (+currentValue.points) }
+        let price_reducer = function (accumulator, currentValue) { return accumulator + (+currentValue.price) }
+
+        data.forEach(function(d) {
+          let prov = d.province
+          if (!visited.has(prov)) {
+            visited.add(prov)
+            let prov_data = data.filter(function(d) { return d.province == prov })
+
+            // mean rating, mean price
+            let rating = d3.round(prov_data.reduce(rating_reducer, 0) / prov_data.length, 3)
+            let price = d3.round(prov_data.reduce(price_reducer, 0) / prov_data.length, 3)
+
+            let winery_set = d3.set()
+            prov_data.forEach(function (dd) {
+              winery_set.add(dd.winery)
+            })
+
+            province_list.push({'province':prov, 'record_count':prov_data.length, 'winery_count':winery_set.size(), 'rating': rating, 'price': price})
+          }
+        })
+
+        province_list.sort(function (a, b) {
+          if (a.winery_count > b.winery_count)
+            return -1
+          if (a.winery_count < b.winery_count)
+            return 1
+          return 0
+        })
+
+        // return top 5 provinces
+        return province_list.slice(0, 5)
+      }
+    </script>
+  </body>
+</html>

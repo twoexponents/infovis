@@ -408,7 +408,7 @@
          .style("font-family", "sans-serif")
          .style("font-size", "18px")
          .attr('class', 'barCount')
-         .text("Avg. Price: $" + d.price);
+         .text("Avg. Price: " + d3.format("$.2f")(d.price));
     }
 
     function barMouseOut() {
@@ -926,11 +926,8 @@
        if (init2) {
         init2 = false
 
-<<<<<<< HEAD
+
         winery_plot.append('text')
-=======
-	winery_plot.append('text')
->>>>>>> b5704d2f6469f123d28d745cf7b27c6aa906637d
         .attr("x", 63)
         .attr("y", 65)
         .text("Winery")
@@ -963,7 +960,6 @@
         .duration(400)
 
       winery_plot.selectAll('.yaxis')
-<<<<<<< HEAD
         .call(yAxis)
         .style('stroke', 'blue')
         .style('stroke-width', '0.2px')
@@ -987,16 +983,6 @@
         })        .selectAll('text')
           .attr("x", "7")
           .attr("y", "-22")
-=======
-	.call(yAxis)
-        .style('stroke', 'blue')
-        .style('stroke-width', '0.2px')
-        .attr('transform', 'rotate(-90)')
-        .attr('transform', 'translate(135,' + 80 +")")
-        .selectAll('text')
-          .attr("dx", ".4em")
-          .attr("dy", "-1.2em")
->>>>>>> b5704d2f6469f123d28d745cf7b27c6aa906637d
           .attr('transform', 'rotate(-65)')
           .style("font-size","14px")
           .style("font-family", "sans-serif")

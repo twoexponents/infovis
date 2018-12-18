@@ -123,7 +123,7 @@
 
     // hmlee
     // Assume that filtered data is fed
-      d3.json("data/wine_9996_ver2.json", function(error, data) {
+      d3.json("data/wine_full.json", function(error, data) {
  
         if(error) return console.error(error)
 
@@ -463,7 +463,8 @@
         .orient("left")
 
     xMax = d3.max(data, function(d) { return d.rating; })
-    x.domain([xMax-10, xMax])
+    xMin = d3.min(data, function(d) { return d.rating; })
+    x.domain([80, 95])
     y.domain(data.map(function(d) { return d.variety }))
 
     if (init) {

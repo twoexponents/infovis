@@ -223,51 +223,55 @@
     var fullData;
 
     d3.select('#button').on('click', function(){
+        console.log("button search clicked.");
         fList = filter(fullData);
-        console.log(fList);
+        drawing();
     });
+
+    d3.json("data/country_id.json", function(error, idData) {
+    	console.log("Load country_id json file");
+    	country_id = idData;
+    })
 
     // hmlee
     // Assume that filtered data is fed
-    d3.json("data/country_id.json", function(error, idData) {
-	console.log("Load country_id json file");
-	country_id = idData;
-    })
     d3.json("data/wine_full.json", function(error, data) {
-	console.log("Load wine data json file.");
-      	
-	if(error) return console.error(error)
-      
-	/*  ctr_code = "USA"
-     	 //data = data.slice(0, 1000)
-	 country_filtered = data.filter(function(d) { return d.ctr_code == ctr_code});
-	 country_stat = countryStat(country_filtered)
+    	console.log("Load wine data json file.");
+          	
+    	if(error) return console.error(error)
+          
+    	fullData = data;
+      drawing();
+    });
 
-    	 province = 'California'
-	 province_filtered = country_filtered.filter(function(d) { return d.province == province})
-    	 province_stat = provinceStat(province_filtered)
-*/
-	fullData = data;
-	
-	// jhlim: make ctr_records json
-	for(var i=0; i<country_id.length; i++) {
-            var records = {};
-            records["id"] = country_id[i].id;
-	    records["values"] = fullData.filter( function(d) {
-	        return d.ctr_code == country_id[i].id } )
-            var temp = fullData.filter(function(d) {
-                return d.ctr_code == country_id[i].id } );
-            records["provinces"] = countryStatAll(temp);
- 	    ctr_records.push(records);
-        }
+    function drawing() {
+      if(fList === undefined)
+        fList = fullData;
+
+      ctr_records = [];
+
+      // jhlim: make ctr_records json
+      for(var i=0; i<country_id.length; i++) {
+          var records = {};
+          records["id"] = country_id[i].id;
+          records["values"] = fList.filter( function(d) {
+              return d.ctr_code == country_id[i].id } )
+          var temp = fList.filter(function(d) {
+              return d.ctr_code == country_id[i].id } );
+          records["provinces"] = countryStatAll(country_id[i].id, temp);
+          ctr_records.push(records);
+      }
             
-	console.log(ctr_records);
 
         //country_stat = countryStat(country_filtered)
 
         popScale = d3.scale.linear()
             .domain(linespace(
-              d3.min(ctr_records, d=>Math.log10(+d.values.length)),
+              // d3.min(ctr_records, d=>Math.log10(+d.values.length)),
+              d3.min(ctr_records, function(d) {
+                if(d.values.length === 0) return 0;
+                else return Math.log10(+d.values.length);
+              }),
               d3.max(ctr_records, d=>Math.log10(+d.values.length)),
               myColorScales.length))
             .range(myColorScales);
@@ -280,14 +284,12 @@
                 return d3.max(e.provinces, d => d.record_count)})])
             .rangeRound([1.5, 4]);
 
-        console.log("max: " + d3.max(ctr_records, function(e) {
-            return d3.max(e.provinces, d => d.record_count)}));
         countryFill();
 
         regionPoint();
         regionPointHidden();
-	drawLegend();
-    });
+        drawLegend();
+    }
 
     // jhlim
     // Draw a map
@@ -393,9 +395,9 @@
     }
 
     function countryChart(id){
-      var list = countryFilter(fullData, id)
-      var fList = filter(list)
-      var stat = countryStat(fList);
+      var list = countryFilter(fList, id)
+      var ffList = filter(list)
+      var stat = countryStat(ffList);
 
       //pie chart
       var width = 545,
@@ -425,7 +427,7 @@
       var title = country_plot1
       	  .append('text')
       	  .attr("id", 'pieTitle')
-      	  .text(fList[0].country)
+      	  .text(ffList[0].country)
 	  .style("font-size", "20px")
 	  .style("font-weight", "bold")
 	  .style("font-family", "sans-serif")
@@ -640,13 +642,15 @@
     var regionStatColor = d3.scale.ordinal()
 	 .range(["#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c"]);
     let init = true;
-    function regionStat(id) {
+    function regionStat(cid, rid) { //cid: country name, rid: region name
+      console.log("regionStat called.");
 
-      if (fList == undefined) {
-	  fList = fullData
+      if (fList === undefined) {
+	      fList = fullData
       }
-      var country_filtered = countryFilter(fList, id.country)
-      var province_filtered = country_filtered.filter(function(dd) { return dd.province == id })
+
+      var country_filtered = countryFilter(fList, cid)
+      var province_filtered = country_filtered.filter(function(dd) { return dd.province == rid })
 
       data = provinceStat(province_filtered)
       let var_data = data.slice(0, 5)
@@ -676,7 +680,7 @@
         variety_plot.append('text')
         .attr("x", 290)
         .attr("y", 30)
-        .text(id)
+        .text(rid)
         .attr('class', 'title')
         .style("font-weight", "bold")
         .style("font-size","25px")
@@ -732,7 +736,7 @@
       variety_plot.selectAll('.title')
         .attr("x", 290)
         .attr("y", 30)
-        .text(id)
+        .text(rid)
         .attr('class', 'title')
         .style("font-weight", "bold")
         .style("font-size","25px")
@@ -875,7 +879,9 @@
           .attr('fill', function() {
 	    if(+ctr_records[i].values.length === 0)
 		return '#ECEFF1';
-	    else return popScale(Math.log10(+ctr_records[i].values.length));});
+	    else {
+        return popScale(Math.log10(+ctr_records[i].values.length));};
+        });
       }
     }
     function countryUnfill() {
@@ -933,13 +939,21 @@
 
         if(data === undefined)
           label = d.properties.name;
-        else
-          label = d.properties.name + '</br>' + 'records: ' + data.values.length;
+        else {
+          var avg_rating = d3.mean(data.values, d => d.points);
+          var avg_price = d3.mean(data.values, d => d.price);
+          
+          label = '&nbsp&nbsp' + d.properties.name + '</br>' +
+                  'records: ' + data.values.length + '</br>' +
+                  'ratings: ' + avg_rating + '</br>' +
+                  'price: ' + avg_price + '</br>';
+        }
         var mouse = d3.mouse(svg.node())
           .map( function(d) { return parseInt(d); } );
         tooltip.classed("hidden", false)
           .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
           .html(label);
+
       }
     }
 
@@ -1018,7 +1032,8 @@
     var legendWidth = legendFullWidth - legendMargin.left - legendMargin.right;
     var legendHeight = legendFullHeight - legendMargin.top - legendMargin.bottom;
 
-    var legendSvg = d3.select('body').append('svg').style('border', '0px')
+    function drawLegend() {
+      var legendSvg = d3.select('body').append('svg').style('border', '0px')
       .style('top', (height - 100) + 'px')
       .style('left', '14px')
       .attr('opacity', 0.8)
@@ -1054,9 +1069,8 @@
         .attr('width', legendWidth-30)
         .attr('height', legendHeight)
         .style('fill', 'url(#gradient)')
-	.attr('transform', translate(20, 5));
+        .attr('transform', translate(20, 5));
 
-    function drawLegend() {
     	var legendScale = d3.scale.linear()
             .domain([1, d3.max(ctr_records, d=>Math.log10(+d.values.length))])
 	    .range([legendHeight, 0]);
@@ -1102,6 +1116,7 @@
       }
       return result;
     }
+   
 
     // hmlee
     // calculate statistic for specific country (ex. data which is filtered for USA)
@@ -1150,7 +1165,7 @@
     }
 
 	// jhlim: get stats of all regions.
-    function countryStatAll(data) {
+    function countryStatAll(cid, data) {
       let visited = d3.set()
       let province_list = []
       let rating_reducer = function (accumulator, currentValue) { return accumulator + (+currentValue.points) }
@@ -1174,7 +1189,7 @@
           let lat = prov_data[0].lat;
           let lng = prov_data[0].lng;
 
-          province_list.push({'province':prov, 'record_count':prov_data.length, 'winery_count':winery_set.size(), 'rating': rating, 'price': price, 'lat': lat, 'lng': lng})
+          province_list.push({'province':prov, 'record_count':prov_data.length, 'winery_count':winery_set.size(), 'rating': rating, 'price': price, 'lat': lat, 'lng': lng, 'country': cid})
         }
       })
 

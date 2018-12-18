@@ -106,7 +106,7 @@
   </div>
 <div id="map"></div>
 <div style="position: absolute; top:670px; left:950px">
-<form id="dimension" style="visibility: hidden">
+<form id="dimension">
   <input type='radio' id="price" name="mode" checked="true"><text style="font-family: sans-serif">price</text></input>
   <input type='radio' id="rating" name="mode" ><text style="font-family: sans-serif">rating</text></input>
 </form></div>
@@ -238,7 +238,7 @@
       province_filtered = country_filtered.filter(function(d) { return d.province == province})
      // province_stat = provinceStat(province_filtered)
 
-     fullData = data;
+      fullData = data;
     })
 
     // jhlim
@@ -362,13 +362,8 @@
 
     function countryChart(id){
       var list = countryFilter(fullData, id)
-
-      var m1 = Number(min.property('value'));
-      var m2 = Number(max.property('value'));
-      var r = Number(d3.select("text#slider").text());
-
-      //var result = filter(data, m1, m2, r);
-      var stat = countryStat(list);
+      var fList = filter(list)
+      var stat = countryStat(fList);
 
       //pie chart
       var width = 545,
@@ -808,6 +803,7 @@
         country_plot2.selectAll('g').remove();
         countryChart(d.id);
       }
+
       if(viewDegree === "country") {
         countryFill();
         d3.select(this)
@@ -843,6 +839,7 @@
       countryFill();
       regionPointHidden();
     }
+
     function regionPointVisible() {
       d3.selectAll('.region')
         .style('visibility', 'visible');
@@ -930,22 +927,17 @@
 
     //filter for points and price
     function filter(data){
-      var min = d3.select('#min');
-      var max = d3.select('#max');
-      d3.select("text#slider").text(point);
-
-      var m1 = Number(min.property('value'));
-      var m2 = Number(max.property('value'));
-      var r = Number(d3.select("text#slider").text());
+      var min = Number(d3.select('#min').property('value'));
+      var max = Number(d3.select('#max').property('value'));
+      var rating = Number(d3.select("text#slider").text());
 
       var result = [];
 
       data.forEach(function(d){
-        if(d.price <= max && d.price >= min && d.points >= point){
+        if(d.price <= max && d.price >= min && d.points >= rating){
           result.push(d);
         }
       })
-
       return result;
     }
 

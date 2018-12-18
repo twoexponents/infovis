@@ -65,6 +65,30 @@
       text-anchor: middle;
       padding-right: 10px;
     }
+
+    .xaxis line {
+      fill: none;
+      stroke: #999;
+      stroke-width: 1px;
+      shape-rendering: crispEdges;
+    }
+
+    .xaxis path {
+      fill: none;
+      stroke: none;
+    }
+
+    .yaxis line {
+      fill: none;
+      stroke: #999;
+      stroke-width: 1px;
+      shape-rendering: crispEdges;
+    }
+
+    .yaxis path {
+      fill: none;
+      stroke: none;
+    }
   </style>
 </head>
 
@@ -81,6 +105,11 @@
     <input type="button" value="SEARCH" id="button"/>
   </div>
 <div id="map"></div>
+<div style="position: absolute; top:670px; left:950px">
+<form id="dimension" style="visibility: hidden">
+  <input type='radio' id="price" name="mode" checked="true"><text style="font-family: sans-serif">price</text></input>
+  <input type='radio' id="rating" name="mode" ><text style="font-family: sans-serif">rating</text></input>
+</form></div>
   <script src="http://d3js.org/d3.v3.min.js"></script>
   <script src="http://d3js.org/topojson.v1.min.js"></script>
   <script>
@@ -136,6 +165,15 @@
     //for drawing color
     var myColorScales = ['#FFE8CE', '#FFDBB2', '#FFCB8E', '#FFBE73', '#FFB157', '#FFA63F', '#FF9B28'];
 
+    //filter
+    var min = d3.select('#min');
+    var max = d3.select('#max');
+    d3.select("input[type=range]#range").on("input", function() {
+      var point;
+      point = this.value;
+      d3.select("text#slider").text(point);
+    });
+
     function linespace(start, end, n) {
       var out = [];
       var delta = (end - start) / (n - 1);
@@ -151,25 +189,24 @@
     let popScale; //country color range
 
     let country_plot1 = d3.select('body').append('svg') // first graph
-        .attr('width', 580)
-        .attr('height', 420)
-        .style('top', '665px')
-        .style('left', '10px');
+        .attr('width', 545)
+        .attr('height', 500)
+        .style('top', '665px');
     let country_plot2 = d3.select('body').append('svg') // second graph
-        .attr('width', 580)
-        .attr('height', 420)
-        .style('top', '665px')
-        .style('left', '595px');
+        .attr('width', 545)
+        .attr('height', 475)
+        .style('top', '690px')
+        .style('left', '560px')
     let variety_plot = d3.select('body').append('svg') // first graph
         .attr('width', 670)
-        .attr('height', 540)
-        .style('top', '10px')
-        .style('left', '1190px');
+        .attr('height', 550)
+        .style('top', '60px')
+        .style('left', '1130px');
     let winery_plot = d3.select('body').append('svg') // second graph
         .attr('width', 670)
-        .attr('height', 530)
-        .style('top', '560px')
-        .style('left', '1190px');
+        .attr('height', 545)
+        .style('top', '620px')
+        .style('left', '1130px');
     let countryData =
                [{"id": "AUS", "color": "#DCBA98", "nums": "1000"},
                 {"id": "USA", "color": "#FEDCBA", "nums": "50000"},
@@ -179,13 +216,13 @@
                  {"id": "Michigan", "latitude": "44.182205", "longitude": "-84.506836", "price": "40", "point": "91", "nums": "40"},
                  {"id": "California", "latitude": "38.44368", "longitude": "-123.12019", "price": "69", "point": "83", "nums": "200"}];
 
+    var fullData;
 
     // hmlee
     // Assume that filtered data is fed
     d3.json("data/wine_full.json", function(error, data) {
 
       if(error) return console.error(error)
-
       ctr_code = "USA"
       //data = data.slice(0, 1000)
       country_filtered = data.filter(function(d) { return d.ctr_code == ctr_code })
@@ -194,6 +231,8 @@
       province = 'California'
       province_filtered = country_filtered.filter(function(d) { return d.province == province})
      // province_stat = provinceStat(province_filtered)
+
+     fullData = data;
     })
 
     // jhlim
@@ -315,6 +354,246 @@
       d3.selectAll('.barCount').remove()
     }
 
+    function countryChart(id){
+      var list = countryFilter(fullData, id)
+
+      var m1 = Number(min.property('value'));
+      var m2 = Number(max.property('value'));
+      var r = Number(d3.select("text#slider").text());
+
+      //var result = filter(data, m1, m2, r);
+      var stat = countryStat(list);
+
+      //pie chart
+      var width = 545,
+      height = 500,
+      radius = Math.min(width, height) / 2;
+
+      var color = d3.scale.ordinal()
+          .range(["#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c"]);
+
+      var arc = d3.svg.arc()
+          .outerRadius(radius)
+          .innerRadius(radius * 0.4);
+
+      var labelArc = d3.svg.arc()
+          .outerRadius(radius * 0.5)
+          .innerRadius(radius);
+
+      var pie = d3.layout.pie()
+          .sort(null)
+          .value(function(d) { return d.record_count; });
+
+      var svg = country_plot1
+          .attr("id", id)
+          .append("g")
+          .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+      var g = svg.selectAll(".arc")
+          .data(pie(stat))
+          .enter().append("g")
+          .attr("class", "arc");
+
+      g.append("path")
+          .attr("d", arc)
+          .style("fill", function(d) { return color(d.data.province); });
+
+      g.append("text")
+          .attr("transform", function(d) { return "translate(" + labelArc.centroid(d) + ")"; })
+          .attr("dy", ".3em")
+          .text(function(d) { return d.data.province; });
+
+      //bar chart
+      var form = d3.select("#dimension");
+      form.style("visibility", "visible");
+
+      d3.selectAll("input[type=radio]")
+      .on('change', change);
+
+      var chart = country_plot2
+            .append("g")
+            .attr("id", "bars")
+            .attr("transform", "translate(" + 30 + "," + 20 + ")");
+
+        var x = d3.scale.ordinal()
+            .domain(stat.map(function(d) { return d.province; }))
+            .rangeRoundBands([0, 500], .1);
+
+        var y = d3.scale.linear()
+            .domain([0, d3.max(stat, function(d) { return d.price; }) * 1.1])
+            .range([420, 0]);
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom");
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left");
+
+        chart.append("g")
+            .attr("class", "xaxis")
+            .attr("transform", "translate(0," + 420 + ")")
+            .call(xAxis)
+            .selectAll("text")
+            .style("font-size","12px")
+            .style("font-family", "sans-serif");
+
+        chart.append("g")
+            .attr("class", "yaxis")
+            .call(yAxis)
+            .selectAll("text")
+            .style("font-size","12px")
+            .style("font-family", "sans-serif");
+
+        var bar = chart.selectAll(".bar")
+            .data(stat, stat.province)
+            .enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", function(d) { return x(d.province); })
+            .attr("y", function(d) { return y(d.price); })
+            .attr("width", x.rangeBand())
+            .attr("height", 0)
+            .style("fill", function(d) { return color(d.province); });
+
+        bar.transition()
+            .duration(1000)
+            .ease("elastic")
+            .attr("y", function(d) { return y(d.price); })
+            .attr("height", function(d) { return 420 - y(d.price); })
+
+        var bText = chart.append("g")
+            .attr("class", "tvalues").selectAll(".tvalue").data(stat, stat.province);
+
+        bText.enter().append("text")
+            .attr("class", "tvalue")
+            .attr("x", function(d){return x(d.province);})
+            .attr("dy", ".95em")
+            .attr("dx", ".5em")
+            .attr("y", 0)
+            .text(function(d) { return d3.format("$.2f")(d.price);})
+            .style("font-family", "sans-serif")
+            .style("font-size","12px");
+
+        bText.transition().duration(1000)
+            .attr("y", function(d){return y(d.price) ;});
+
+        d3.selectAll(".tvalues").attr("transform", "translate(" + 0 + "," + -30 + ")");
+
+        function change(){
+          var value = this.id;
+
+          var chart = d3.select("#bars")
+
+          var x = d3.scale.ordinal()
+              .domain(stat.map(function(d) { return d.province; }))
+              .rangeRoundBands([0, 500], .1);
+
+          var y;
+
+          if(value == "price"){
+            y = d3.scale.linear()
+                .domain([0, d3.max(stat, function(d) { return d.price; }) * 1.1])
+                .range([420, 0]);
+          } else{
+            y = d3.scale.linear()
+                .domain([70, d3.max(stat, function(d) { return d.rating; }) * 1.1])
+                .range([420, 0]);
+          }
+
+          var xAxis = d3.svg.axis()
+              .scale(x)
+              .orient("bottom");
+
+          var yAxis = d3.svg.axis()
+              .scale(y)
+              .orient("left");
+
+          chart.select(".xaxis")
+              .transition().duration(1000)
+              .call(xAxis)
+              .selectAll("text")
+              .style("font-size","12px")
+              .style("font-family", "sans-serif");
+
+          chart.select(".yaxis")
+              .transition().duration(1000)
+              .call(yAxis)
+              .selectAll("text")
+              .style("font-size","12px")
+              .style("font-family", "sans-serif");
+
+          var bar = chart.selectAll(".bar")
+              .data(stat, stat.province);
+
+          if(value == "price"){
+            bar.enter().append("rect")
+                .attr("class", "bar")
+                .attr("x", function(d) { return x(d.province); })
+                .attr("y", function(d) { return y(d.price); })
+                .attr("width", x.rangeBand())
+                .attr("height", 0)
+                .transition().duration(1000)
+                .style("fill", function(d) { return color(d.province); });
+
+            bar.each(function(d){
+              d3.select(this).transition().duration(1000)
+                .attr("y", function(d) { return y(d.price); })
+                .attr("height", function(d) { return 420 - y(d.price); })
+            })
+
+            var text = chart.selectAll(".tvalue")
+                .transition().duration(1000)
+                .attr("x", function(d){ return x(d.province);})
+                .attr("y", function(d){return y(d.price) ;})
+                .text(function(d) { return d3.format("$.2f")(d.price);})
+                .style("font-family", "sans-serif")
+                .style("font-size","12px");
+
+            text.each(function(d){
+              d3.select(this).transition().duration(1000)
+                .attr("y", function(d){return y(d.price) ;})
+                .text(function(d) { return d3.format("$.2f")(d.price);})
+            })
+
+            d3.selectAll(".tvalues").attr("transform", "translate(" + 0 + "," + -30 + ")");
+
+          } else{
+            bar.enter().append("rect")
+                .attr("class", "bar")
+                .attr("x", function(d) { return x(d.province); })
+                .attr("y", function(d) { return y(d.rating); })
+                .attr("width", x.rangeBand())
+                .attr("height", 0)
+                .transition().duration(1000)
+                .style("fill", function(d) { return color(d.province); });
+
+            bar.each(function(d){
+              d3.select(this).transition()
+                .duration(1000)
+                .attr("y", function(d) { return y(d.rating); })
+                .attr("height", function(d) { return 420 - y(d.rating); })
+            })
+
+            var text = chart.selectAll(".tvalue")
+                .transition().duration(1000)
+                .attr("x", function(d){ return x(d.province);})
+                .attr("y", function(d){return y(d.rating) ;})
+                .text(function(d) { return d3.format("0.2f")(d.rating);})
+                .style("font-family", "sans-serif")
+                .style("font-size","12px");
+
+            text.each(function(d){
+              d3.select(this).transition().duration(1000)
+                .attr("y", function(d){return y(d.rating) ;})
+                .text(function(d) { return d3.format("0.2f")(d.rating);})
+            })
+
+            d3.selectAll(".tvalues").attr("transform", "translate(" + 0 + "," + -30 + ")");
+          }
+        }
+
+    }
     let init = true;
     function regionStat(d) {
 
@@ -347,37 +626,43 @@
         .attr("y", 30)
         .text(d.id)
         .attr('class', 'title')
-        .style("font-size", "25px")
-        .style("font-weight", "bold");
+        .style("font-weight", "bold")
+        .style("font-size","20px")
+        .style("font-family", "sans-serif");
 
         variety_plot.append('text')
         .attr("x", 63)
         .attr("y", 65)
         .text("Variety")
-        .style("font-size", "20px")
-        .style("font-weight", "bold");
+        .style("font-weight", "bold")
+        .style("font-size","15px")
+        .style("font-family", "sans-serif");;
 
         variety_plot.append('text')
         .attr("x", 575)
         .attr("y", 470)
         .text("Rating")
-        .style("font-size", "20px")
-        .style("font-weight", "bold");
+        .style("font-weight", "bold")
+        .style("font-size","15px")
+        .style("font-family", "sans-serif");
 
         variety_plot.append('g')
-          .attr('class', 'x-axis')
+          .attr('class', 'xaxis')
 
         variety_plot.append('g')
-          .attr('class', 'y-axis')
+          .attr('class', 'yaxis')
       }
 
-      variety_plot.selectAll('.x-axis')
+      variety_plot.selectAll('.xaxis')
         .call(xAxis)
         .attr('transform', 'translate(135,' + 430 +")")
+        .selectAll("text")
+        .style("font-size","12px")
+        .style("font-family", "sans-serif")
         .transition()
         .duration(400)
 
-      variety_plot.selectAll('.y-axis')
+      variety_plot.selectAll('.yaxis')
         .call(yAxis)
         .style('stroke', 'blue')
         .style('stroke-width', '0.2px')
@@ -387,6 +672,8 @@
           .attr("dx", ".4em")
           .attr("dy", "-1.2em")
           .attr('transform', 'rotate(-65)')
+          .style("font-size","12px")
+          .style("font-family", "sans-serif")
         .transition()
         .duration(400)
 
@@ -395,8 +682,9 @@
         .attr("y", 30)
         .text(d.id)
         .attr('class', 'title')
-        .style("font-size", "25px")
-        .style("font-weight", "bold");
+        .style("font-weight", "bold")
+        .style("font-size","20px")
+        .style("font-family", "sans-serif");
 
       let bars = variety_plot.selectAll('.bars')
           .data(data, d=>d.variety)
@@ -508,10 +796,12 @@
 
     function selected(d) {
       console.log(d);
+      countryChart(d.id);
       if(viewDegree === "country") {
         countryFill();
         d3.select(this)
            .attr('fill', d3.hsl(popScale(Math.log(+getCountryData(d.id).nums))).darker(0.3));
+
       }
       else if(viewDegree == "region") {
         console.log(d);
@@ -621,6 +911,25 @@
         .call(legendAxis);
 
 
+    //filter for a specific country
+    function countryFilter(data, ctr_code){
+      var result = data.filter(function(d) { return d.ctr_code == ctr_code })
+
+      return result;
+    }
+
+    //filter for points and price
+    function filter(data, min, max, point){
+      var result = [];
+
+      data.forEach(function(d){
+        if(d.price <= max && d.price >= min && d.points >= point){
+          result.push(d);
+        }
+      })
+
+      return result;
+    }
 
     // hmlee
     // calculate statistic for specific country (ex. data which is filtered for USA)

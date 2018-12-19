@@ -55,7 +55,7 @@
     }
 
     .arc text {
-    font: 10px sans-serif;
+    font: 14px sans-serif;
     text-anchor: middle;
     }
 
@@ -97,15 +97,15 @@
 
 <body>
   <div id="filter" style="display:flex; flex-direction: row; flex-end: center; align-items: center" >
-    <p class="pText"><text>Rating</text>
+    <p class="pText" style="padding-left: 10px"><text>Rating</text>
     <input type="range" min="70" max="100" step="1" value="70" id="range" style="vertical-align: middle"/>
     <text class="pText" id="slider" style="color: gray">70</text>
     </p>
-    <p class="pText"><text>Price</text>
+    <p class="pText" style="padding-right: 50px; padding-left: 50px"><text>Price</text>
     <input id="min" class="select" type="number" placeholder="minimum price" name="min"/> ~
     <input id="max" class="select" type="number" placeholder="maximum price" name="max"/>
     </p>
-    <input type="button" value="SEARCH" id="button"/>
+    <input type="button" value="SEARCH" id="button" style="width: 100px; height: 30px; font-size: 12px"/>
   </div>
 <div id="map"></div>
 <div style="position: absolute; top:670px; left:950px">
@@ -756,7 +756,8 @@
 
           var svg = country_plot1.select("g")
 
-          var g = svg.selectAll(".arc")
+          var g = svg.selectAll(
+          ".arc")
               .data(pie(newstat), d=>d.data.province)
 
           var path = g.enter().append('g')

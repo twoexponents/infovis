@@ -271,6 +271,7 @@
           records["provinces"] = countryStatAll(country_id[i].id, temp);
           ctr_records.push(records);
       }
+      console.log(ctr_records);
 
 
         //country_stat = countryStat(country_filtered)
@@ -300,11 +301,13 @@
                 return d3.max(e.provinces, d => d.record_count)})])
             .rangeRound([1.5, 4]);
 
-        countryFill();
 
         regionPoint();
-        regionPointHidden();
-        drawLegend();
+        if(viewDegree === 'country') {
+          countryFill();
+          regionPointHidden();
+          drawLegend();
+        }
     }
 
     // jhlim
@@ -1410,6 +1413,7 @@
     // draw region points
     function regionPoint() {
 	  console.log("regionPoint called");
+      g.selectAll('circle').remove();
       for(let i=0; i<ctr_records.length; i++) {
         g.selectAll('circle')
           .data(ctr_records[i].provinces, d => d.province)

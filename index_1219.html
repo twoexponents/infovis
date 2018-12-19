@@ -128,6 +128,7 @@
     var currentCtr;
     var fList;
     var country_id;
+    var state_list = [];
 
     var projection = d3.geo.mercator()
         .scale(170)
@@ -170,6 +171,7 @@
 
     //for drawing color
     var myColorScales = ['#FFE8CE', '#FFDBB2', '#FFCB8E', '#FFBE73', '#FFB157', '#FFA63F', '#FF9B28'];
+    var myColorScales2 = ['#D5B7D5', '#C071C0', '#B050B0', '#871A87', '#720372']
 
     //filter
     var min = d3.select('#min');
@@ -194,6 +196,7 @@
     }
     let radiusScale; //region point radius range
     let popScale; //country color range
+    let popScale2; //region color range
 
     let country_plot1 = d3.select('body').append('svg') // first graph
         .attr('width', 545)
@@ -214,14 +217,6 @@
         .attr('height', 545)
         .style('top', '620px')
         .style('left', '1130px');
-    let countryData =
-               [{"id": "AUS", "color": "#DCBA98", "nums": "1000"},
-                {"id": "USA", "color": "#FEDCBA", "nums": "50000"},
-                {"id": "FRA", "color": "#A09876", "nums": "10000"}];
-    let regionData =
-               [ {"id": "Oregon", "latitude": "45.512794", "longitude": "-122.679565", "price": "43", "point": "87", "nums": "22"},
-                 {"id": "Michigan", "latitude": "44.182205", "longitude": "-84.506836", "price": "40", "point": "91", "nums": "40"},
-                 {"id": "California", "latitude": "38.44368", "longitude": "-123.12019", "price": "69", "point": "83", "nums": "200"}];
 
     var fullData;
 
@@ -275,7 +270,6 @@
 
         popScale = d3.scale.linear()
             .domain(linespace(
-              // d3.min(ctr_records, d=>Math.log10(+d.values.length)),
               d3.min(ctr_records, function(d) {
                 if(d.values.length === 0) return 0;
                 else return Math.log10(+d.values.length);
@@ -283,6 +277,13 @@
               d3.max(ctr_records, d=>Math.log10(+d.values.length)),
               myColorScales.length))
             .range(myColorScales);
+
+	popScale2 = d3.scale.linear()
+            .domain(linespace(
+              d3.min(ctr_records, d => d3.min(d.provinces, e => e.rating)),
+              d3.max(ctr_records, d => d3.max(d.provinces, e => e.rating)),
+              myColorScales2.length))
+            .range(myColorScales2);
 
         radiusScale = d3.scale.linear()
             .domain([
@@ -329,7 +330,9 @@
         .data(topojson.feature(world, world.objects.states).features)
         .enter().append("path")
         .attr("class", "state")
-        .attr("name", function(d) { return d.properties.name;})
+        .attr("name", function(d) { 
+          state_list.push(d.properties.name);
+          return d.properties.name;})
         .attr("id", function(d) { return d.id;})
         .on("click", selected)
         .on("mousemove", showTooltip)
@@ -422,7 +425,9 @@
 
     function countryChart(id){
       if(getCountryData(id) === undefined) {
-        id = 'USA';
+        if(state_list.includes(id)) {
+          id = 'USA';
+        }
       }
       // console.log(getCountryData(id));
       var list = countryFilter(fList, id)
@@ -462,7 +467,7 @@
       	  .style("font-weight", "bold")
       	  .style("font-family", "sans-serif")
       	  .style("text-anchor", "middle")
-	        .attr("transform", translate(width/2, height/2));
+	  .attr("transform", translate(width/2, height/2));
 
       var g = svg.selectAll(".arc")
           .data(pie(stat), stat.province)
@@ -1199,7 +1204,7 @@
           .append('circle')
           .attr('class', 'region')
           .attr('r', d => radiusScale(d.record_count))
-          .style('fill', '#FF5722')
+          .style('fill', d => popScale2(d.rating))
           .style('opacity', 0.8)
           .attr('transform', function(d) {
             temp = projection([+d.lng, +d.lat]);
@@ -1261,11 +1266,13 @@
     function selected(d) {
       if(currentCtr !== d.id){
         currentCtr = d.id;
-        console.log(currentCtr)
         country_plot1.selectAll('g').remove();
-	      country_plot1.selectAll('text').remove();
+	country_plot1.selectAll('text').remove();
         country_plot2.selectAll('g').remove();
-        countryChart(d.id);
+
+        if(state_list.includes(d.properties.name))
+          countryChart(d.properties.name);
+        else countryChart(d.id);
       }
 
       countryUnfill();
@@ -1291,6 +1298,8 @@
         .classed('hidden', false);
       usa
         .classed('hidden', true);
+      legendSvg
+	.classed('hidden', true);
 
       countryUnfill();
       regionPointVisible();
@@ -1302,6 +1311,8 @@
         .classed('hidden', true);
       usa
         .classed('hidden', false);
+      legendSvg
+	.classed('hidden', false);
 
       countryFill();
       regionPointHidden();
@@ -1332,9 +1343,12 @@
     var legendMargin = { top: 20, bottom: 20, left: 10, right: 10};
     var legendWidth = legendFullWidth - legendMargin.left - legendMargin.right;
     var legendHeight = legendFullHeight - legendMargin.top - legendMargin.bottom;
+    var legendSvg, legendSvg2;
 
     function drawLegend() {
-      var legendSvg = d3.select('body').append('svg').style('border', '0px')
+      if(legendSvg !== undefined)
+	legendSvg.selectAll('*').remove();
+      legendSvg = d3.select('body').append('svg').style('border', '0px')
       .style('top', (height - 100) + 'px')
       .style('left', '14px')
       .attr('opacity', 0.8)
@@ -1343,6 +1357,12 @@
       .append('g')
       .attr('transform', 'translate(' + legendMargin.left + ',' +
       legendMargin.top + ')');
+
+      legendSvg.append('text')
+        .text("log(# of records)")
+        .style("font-size", "12px")
+        .style("font-weight", "bold")
+        .attr('opacity', 0.9)
 
     var gradient = legendSvg.append('defs')
       .append('linearGradient')

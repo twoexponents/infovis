@@ -301,7 +301,7 @@
                 return d3.max(e.provinces, d => d.record_count)})])
             .rangeRound([1.5, 6]);
 
-        
+
         regionPoint();
 
         if(viewDegree === 'country') {
@@ -757,8 +757,7 @@
 
           var svg = country_plot1.select("g")
 
-          var g = svg.selectAll(
-          ".arc")
+          var g = svg.selectAll(".arc")
               .data(pie(newstat), d=>d.data.province)
 
           var path = g.enter().append('g')
@@ -779,18 +778,17 @@
           g.exit().remove();
 
           g = svg.selectAll(".arc")
-              .data(pie(newstat), d=>d.data.province)
+              //.data(pie(newstat), d=>d.data.province)
 
           var text = g.selectAll("text").data(pie(newstat), d=>d.data.province);
 
           text.enter().append("text")
-              .transition().duration(1000)
               .attr("transform", function(d) { return "translate(" + labelArc.centroid(d) + ")"; })
               .attr("dy", ".3em")
               .text(function(d) { return d.data.province; });
 
           text.each(function(d){
-            d3.select(this).transition().duration(1000)
+            d3.select(this)
               .attr("transform", function(d) { return "translate(" + labelArc.centroid(d) + ")"; })
               .attr("dy", ".3em")
               .text(function(d) { return d.data.province; });

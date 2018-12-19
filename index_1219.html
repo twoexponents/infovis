@@ -427,11 +427,6 @@
     }
 
     function countryChart(id){
-      if(getCountryData(id) === undefined) {
-        if(state_list.includes(id)) {
-          id = 'USA';
-        }
-      }
       // console.log(getCountryData(id));
       var list = countryFilter(fList, id)
       var ffList = filter(list)
@@ -1417,7 +1412,7 @@
             temp[0] = temp[0] + rotateVal;
             return 'translate(' + temp + ')'})
           .on("click", function(d, i) {
-            selected;
+            selected(d);
             regionStat(d.country, d.province); // hmlee
           })
           .on("mousemove", showPointTooltip)
@@ -1470,15 +1465,36 @@
     }
 
     function selected(d) {
-      if(currentCtr !== d.id){
-        currentCtr = d.id;
-        country_plot1.selectAll('g').remove();
-	      country_plot1.selectAll('text').remove();
-        country_plot2.selectAll('g').remove();
-
-        if(state_list.includes(d.properties.name))
-          countryChart(d.properties.name);
-        else countryChart(d.id);
+      console.log(d);
+      // 1) country selected
+      if(d.id !== undefined) {
+        if(currentCtr !== d.id) {
+          country_plot1.selectAll('g').remove();
+          country_plot1.selectAll('text').remove();
+          country_plot2.selectAll('g').remove();
+          currentCtr = d.id;
+          countryChart(currentCtr);
+        }
+      }
+      // 2) state selected
+      else if(d.properties !== undefined) {
+        if(currentCtr !== 'USA') {
+          country_plot1.selectAll('g').remove();
+          country_plot1.selectAll('text').remove();
+          country_plot2.selectAll('g').remove();
+          currentCtr = 'USA';
+          countryChart(currentCtr);
+        }
+      }
+      // 3) point selected
+      else if(d.province !== undefined) {
+        if(currentCtr !== d.country) {
+          country_plot1.selectAll('g').remove();
+          country_plot1.selectAll('text').remove();
+          country_plot2.selectAll('g').remove();
+          currentCtr = d.country;
+          countryChart(currentCtr);
+        }
       }
 
       countryUnfill();

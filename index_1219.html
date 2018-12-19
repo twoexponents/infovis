@@ -229,6 +229,11 @@
         console.log("button search clicked.");
         fList = filter(fullData);
         drawing();
+
+        var id = currentCtr;
+        var list = countryFilter(fList, id)
+        var newstat = countryStat(list);
+        countryChartUpdate(newstat)
     });
 
     d3.json("data/country_id.json", function(error, idData) {
@@ -714,6 +719,130 @@
 
     }
 
+    function countryChartUpdate(newstat){
+
+      var color = d3.scale.ordinal()
+          .range(["#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c"]);
+
+      var form = d3.select("#dimension").selectAll("input");
+      var value;
+      form.each(function(d){
+        if(d3.select(this).property('checked')){
+          value = d3.select(this).property('id')
+        }
+      })
+
+      var chart = country_plot2.selectAll("#bars")
+
+      var x = d3.scale.ordinal()
+          .domain(newstat.map(function(d) { return d.province; }))
+          .rangeRoundBands([0, 500], .1);
+
+      var y;
+
+      if(value == "price"){
+        y = d3.scale.linear()
+            .domain([0, d3.max(newstat, function(d) { return d.price; }) * 1.1])
+            .range([420, 0]);
+      } else{
+        y = d3.scale.linear()
+            .domain([70, d3.max(newstat, function(d) { return d.rating; }) * 1.1])
+            .range([420, 0]);
+      }
+
+      var xAxis = d3.svg.axis()
+          .scale(x)
+          .orient("bottom");
+
+      var yAxis = d3.svg.axis()
+          .scale(y)
+          .orient("left");
+
+      chart.select(".xaxis")
+          .transition().duration(1000)
+          .call(xAxis)
+          .selectAll("text")
+          .style("font-size","12px")
+          .style("font-family", "sans-serif");
+
+      chart.select(".yaxis")
+          .transition().duration(1000)
+          .call(yAxis)
+          .selectAll("text")
+          .style("font-size","12px")
+          .style("font-family", "sans-serif");
+
+      var bar = chart.selectAll(".bar")
+          .data(newstat, newstat.province);
+
+      if(value == "price"){
+        bar.enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", function(d) { return x(d.province); })
+            .attr("y", function(d) { return y(d.price); })
+            .attr("width", x.rangeBand())
+            .attr("height", 0)
+            .transition().duration(1000)
+            .style("fill", function(d) { return color(d.province); });
+
+        bar.each(function(d){
+          d3.select(this).transition().duration(1000)
+            .attr("y", function(d) { return y(d.price); })
+            .attr("height", function(d) { return 420 - y(d.price); })
+        })
+
+        var text = chart.selectAll(".tvalue")
+            .transition().duration(1000)
+            .attr("x", function(d){ return x(d.province);})
+            .attr("y", function(d){return y(d.price) ;})
+            .text(function(d) { return d3.format("$.2f")(d.price);})
+            .style("font-family", "sans-serif")
+            .style("font-size","12px");
+
+        text.each(function(d){
+          d3.select(this).transition().duration(1000)
+            .attr("x", function(d){ return x(d.province);})
+            .attr("y", function(d){return y(d.price) ;})
+            .text(function(d) { return d3.format("$.2f")(d.price);})
+        })
+
+        d3.selectAll(".tvalues").attr("transform", "translate(" + 0 + "," + -30 + ")");
+
+      } else{
+        bar.enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", function(d) { return x(d.province); })
+            .attr("y", function(d) { return y(d.rating); })
+            .attr("width", x.rangeBand())
+            .attr("height", 0)
+            .transition().duration(1000)
+            .style("fill", function(d) { return color(d.province); });
+
+        bar.each(function(d){
+          d3.select(this).transition()
+            .duration(1000)
+            .attr("y", function(d) { return y(d.rating); })
+            .attr("height", function(d) { return 420 - y(d.rating); })
+        })
+
+        var text = chart.selectAll(".tvalue")
+            .transition().duration(1000)
+            .attr("x", function(d){ return x(d.province);})
+            .attr("y", function(d){return y(d.rating) ;})
+            .text(function(d) { return d3.format("0.2f")(d.rating);})
+            .style("font-family", "sans-serif")
+            .style("font-size","12px");
+
+        text.each(function(d){
+          d3.select(this).transition().duration(1000)
+            .attr("y", function(d){return y(d.rating) ;})
+            .text(function(d) { return d3.format("0.2f")(d.rating);})
+        })
+
+        d3.selectAll(".tvalues").attr("transform", "translate(" + 0 + "," + -30 + ")");
+      }
+    }
+
     var regionStatColor = d3.scale.ordinal()
 	 .range(["#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c"]);
     let init = true;
@@ -1014,7 +1143,7 @@
 
       let bars = winery_plot.selectAll('.win_bars')
           .data(win_data, d=>d.winery)
-   
+
       bars.exit()
           .remove()
 
@@ -1130,11 +1259,11 @@
     }
 
     function selected(d) {
-      console.log(d);
       if(currentCtr !== d.id){
         currentCtr = d.id;
+        console.log(currentCtr)
         country_plot1.selectAll('g').remove();
-	country_plot1.selectAll('text').remove();
+	      country_plot1.selectAll('text').remove();
         country_plot2.selectAll('g').remove();
         countryChart(d.id);
       }
@@ -1273,15 +1402,27 @@
 
       var result = [];
 
-      if(max === 0){
+      if(max === 0 && min > 0){
         data.forEach(function(d){
-	  if(d.points >= rating){
-	      result.push(d);
-	  }
-	})
+      	  if(d.points >= rating && d.price >=min){
+      	      result.push(d);
+      	  }
+      	})
+      } else if(max > 0 && min === 0){
+    	  data.forEach(function(d){
+          if(d.price <= max && d.points >= rating){
+            result.push(d);
+          }
+        })
+      } else if(max > 0 && min > 0){
+        data.forEach(function(d){
+          if(d.price <= max && d.price >=min && d.points >= rating){
+            result.push(d);
+          }
+        })
       } else{
-	  data.forEach(function(d){
-          if(d.price <= max && d.price >= min && d.points >= rating){
+        data.forEach(function(d){
+          if(d.points >= rating){
             result.push(d);
           }
         })

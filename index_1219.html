@@ -97,8 +97,8 @@
 <body>
   <div id="filter" style="display:flex; flex-direction: row; flex-end: center; align-items: center" >
     <p class="pText"><text>Rating</text>
-    <input type="range" min="0" max="100" step="1" value="50" id="range" style="vertical-align: middle"/>
-    <text class="pText" id="slider">50</text>
+    <input type="range" min="0" max="100" step="1" value="70" id="range" style="vertical-align: middle"/>
+    <text class="pText" id="slider" style="color: gray">70</text>
     </p>
     <p class="pText"><text>Price</text>
     <input id="min" class="select" type="number" placeholder="minimum price" name="min"/> ~
@@ -226,8 +226,8 @@
         drawing();
 
         var id = currentCtr;
-        var list = countryFilter(fList, id)
-        var newstat = countryStat(list);
+        var ffList = countryFilter(fList, id)
+        var newstat = countryStat(ffList);
         countryChartUpdate(newstat)
     });
 
@@ -330,7 +330,7 @@
         .data(topojson.feature(world, world.objects.states).features)
         .enter().append("path")
         .attr("class", "state")
-        .attr("name", function(d) { 
+        .attr("name", function(d) {
           state_list.push(d.properties.name);
           return d.properties.name;})
         .attr("id", function(d) { return d.id;})
@@ -1470,7 +1470,7 @@
       if(currentCtr !== d.id){
         currentCtr = d.id;
         country_plot1.selectAll('g').remove();
-	country_plot1.selectAll('text').remove();
+	      country_plot1.selectAll('text').remove();
         country_plot2.selectAll('g').remove();
 
         if(state_list.includes(d.properties.name))
@@ -1627,7 +1627,7 @@
 
       if(max === 0 && min > 0){
         data.forEach(function(d){
-      	  if(d.points >= rating && d.price >=min){
+      	  if(d.points >= rating && d.price >= min){
       	      result.push(d);
       	  }
       	})
@@ -1639,11 +1639,11 @@
         })
       } else if(max > 0 && min > 0){
         data.forEach(function(d){
-          if(d.price <= max && d.price >=min && d.points >= rating){
+          if(d.price <= max && d.price >= min && d.points >= rating){
             result.push(d);
           }
         })
-      } else{
+      } else {
         data.forEach(function(d){
           if(d.points >= rating){
             result.push(d);

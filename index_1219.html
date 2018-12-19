@@ -15,9 +15,10 @@
       stroke-width: 1px;
     }
     svg {
-      border: 1px solid black;
+      /*border: 1px solid gray;*/
       /*background-color: white;*/
       position: absolute;
+      border-radius: 10px;
     }
     .boundary {
       fill: #ECEFF1;
@@ -158,7 +159,9 @@
               rotated = rotated + ((d3.mouse(this)[0] - initX) * 360 / (s * width));
               mouseClicked = false;
           })
-        .call(zoom);
+        .call(zoom)
+        .style('border', '1px solid gray');
+
     //for tooltip
     var offsetL = document.getElementById('map').offsetLeft+10;
     var offsetT = document.getElementById('map').offsetTop+10;
@@ -1542,7 +1545,7 @@
     }
 
     var legendFullHeight = 150;
-    var legendFullWidth = 80;
+    var legendFullWidth = 120;
     var legendMargin = { top: 20, bottom: 20, left: 10, right: 10};
     var legendWidth = legendFullWidth - legendMargin.left - legendMargin.right;
     var legendHeight = legendFullHeight - legendMargin.top - legendMargin.bottom;
@@ -1563,7 +1566,7 @@
 
       legendSvg.append('text')
         .text("log(# of records)")
-        .style("font-size", "12px")
+        .style("font-size", "16px")
         .style("font-weight", "bold")
         .attr('opacity', 0.9)
 
@@ -1590,10 +1593,10 @@
     legendSvg.append('rect')
         .attr('x1', 0)
         .attr('y1', 1000)
-        .attr('width', legendWidth-30)
+        .attr('width', 30)
         .attr('height', legendHeight)
         .style('fill', 'url(#gradient)')
-        .attr('transform', translate(20, 5));
+        .attr('transform', translate(legendWidth-70, 5));
 
     	var legendScale = d3.scale.linear()
             .domain([1, d3.max(ctr_records, d=>Math.log10(+d.values.length))])
@@ -1606,7 +1609,7 @@
 
 	legendSvg.append("g")
     	    .attr("class", "legend axis")
-            .attr("transform", translate(legendWidth-10, 5))
+            .attr("transform", translate(legendWidth-40, 5))
             .call(legendAxis);
     }
 

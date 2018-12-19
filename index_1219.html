@@ -232,6 +232,10 @@
         var ffList = countryFilter(fList, id)
         var newstat = countryStat(ffList);
         countryChartUpdate(newstat)
+        if (!init) {
+          console.log(fList)
+          regionStat(id, currentReg, fList)
+        }
     });
 
     d3.json("data/country_id.json", function(error, idData) {
@@ -1057,14 +1061,22 @@
     var regionStatColor = d3.scale.ordinal()
 	 .range(["#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c"]);
     let init = true;
-    function regionStat(cid, rid) { //cid: country name, rid: region name
+    let currentReg;
+    let regionCurrentCtr;
+    function regionStat(cid, rid, list) { //cid: country name, rid: region name
       console.log("regionStat called.");
 
-      if (fList === undefined) {
-	      fList = fullData
+      if (list === undefined) {
+	      list = fullData
+      }
+      currentReg = rid;
+      if (cid == undefined) {
+        cid = regionCurrentCtr;
+      } else {
+        regionCurrentCtr = cid;
       }
 
-      var country_filtered = countryFilter(fList, cid)
+      var country_filtered = countryFilter(list, cid)
       var province_filtered = country_filtered.filter(function(dd) { return dd.province == rid })
 
       data = provinceStat(province_filtered)
@@ -1093,7 +1105,7 @@
         init = false
 
         variety_plot.append('text')
-        .attr("x", 290)
+        .attr("x", 300*(100-rid.length)/100)
         .attr("y", 30)
         .text(rid)
         .attr('class', 'title')
@@ -1111,7 +1123,7 @@
 
         variety_plot.append('text')
         .attr("x", 575)
-        .attr("y", 480)
+        .attr("y", 490)
         .text("Rating")
         .style("font-weight", "bold")
         .style("font-size","20px")
@@ -1165,7 +1177,7 @@
         .duration(400)
 
       variety_plot.selectAll('.title')
-        .attr("x", 290)
+        .attr("x", 300*(100-rid.length)/100)
         .attr("y", 30)
         .text(rid)
         .attr('class', 'title')
@@ -1418,7 +1430,7 @@
             return 'translate(' + temp + ')'})
           .on("click", function(d, i) {
             selected;
-            regionStat(d.country, d.province); // hmlee
+            regionStat(d.country, d.province, fList); // hmlee
           })
           .on("mousemove", showPointTooltip)
           .on("mouseout",  function(d,i) {

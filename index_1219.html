@@ -252,6 +252,7 @@
 
     	fullData = data;
       drawing();
+
     });
 
     function drawing() {
@@ -1467,6 +1468,7 @@
         else {
           var avg_rating = d3.mean(data.values, d => d.points);
           var avg_price = d3.mean(data.values, d => d.price);
+          var sum_
 
           label = '&nbsp&nbsp&nbsp' + d.properties.name + '</br>' +
                   'records: ' + d3.format(',')(data.values.length) + '</br>' +
@@ -1539,7 +1541,9 @@
       usa
         .classed('hidden', true);
       legendSvg
-	.classed('hidden', true);
+	     .classed('hidden', true);
+      legendSvg2
+        .classed('hidden', false);
 
       countryUnfill();
       regionPointVisible();
@@ -1553,6 +1557,8 @@
         .classed('hidden', false);
       legendSvg
 	.classed('hidden', false);
+      legendSvg2
+      .classed('hidden', true);
 
       countryFill();
       regionPointHidden();
@@ -1585,9 +1591,13 @@
     var legendHeight = legendFullHeight - legendMargin.top - legendMargin.bottom;
     var legendSvg, legendSvg2;
 
-    function drawLegend() {
+    function drawLegend() {   
       if(legendSvg !== undefined)
-	legendSvg.selectAll('*').remove();
+	     legendSvg.selectAll('*').remove();
+
+      if(legendSvg2 !== undefined)
+       legendSvg2.selectAll('*').remove();
+
       legendSvg = d3.select('body').append('svg').style('border', '0px')
       .style('top', (height - 100) + 'px')
       .style('left', '14px')
@@ -1645,7 +1655,76 @@
     	    .attr("class", "legend axis")
             .attr("transform", translate(legendWidth-40, 5))
             .call(legendAxis);
+
+                  legendSvg2 = d3.select('body').append('svg').style('border', '0px')
+      .style('top', (height - 100) + 'px')
+      .style('left', '14px')
+      .attr('opacity', 0.8)
+      .attr('width', legendFullWidth+20)
+      .attr('height', legendFullHeight)
+      .append('g')
+      .attr('transform', 'translate(' + legendMargin.left + ',' +
+      legendMargin.top + ')');
+
+      legendSvg2.append('text')
+        .text("Average rating")
+        .style("font-size", "16px")
+        .style("font-weight", "bold")
+        .attr('opacity', 0.9)
+
+      var gradient2 = legendSvg2.append('defs')
+      .append('linearGradient')
+      .attr('id', 'gradient2')
+      .attr('x1', '0%')
+      .attr('y1', '100%')
+      .attr('x2', '0%')
+      .attr('y2', '0%')
+      .attr('spreadMethod', 'pad');
+
+    var pct2 = linespace(0, 100, myColorScales2.length).map(function(d) { return Math.round(d) + '%'; });
+
+    var colourPct2 = d3.zip(pct2, myColorScales2);
+    
+    colourPct2.forEach(function(d) {
+        gradient2.append('stop')
+            .attr('offset', d[0])
+            .attr('stop-color', d[1])
+            .attr('stop-opacity', 1);
+
+      if(viewDegree === 'country') {
+        legendSvg.classed('hidden', false)
+        legendSvg2.classed('hidden', true)
+      } else {
+        legendSvg.classed('hidden', true)
+        legendSvg2.classed('hidden', false)
+      }
+    });
+
+    legendSvg2.append('rect')
+        .attr('x1', 0)
+        .attr('y1', 1000)
+        .attr('width', 30)
+        .attr('height', legendHeight)
+        .style('fill', 'url(#gradient2)')
+        .attr('transform', translate(legendWidth-70, 5));  
+
+    var legendScale2 = d3.scale.linear()
+            .domain([d3.min(ctr_records, d=>d3.min(d.provinces, e=>e.rating)),
+               d3.max(ctr_records, d=>d3.max(d.provinces, e=>e.rating))])
+      .range([legendHeight, 0]);
+
+      var legendAxis2 = d3.svg.axis()
+            .scale(legendScale2)
+      .orient("right")
+          .ticks(4, 1)
+          // .ticks(5, 2);
+
+  legendSvg2.append("g")
+          .attr("class", "legend axis")
+            .attr("transform", translate(legendWidth-40, 5))
+            .call(legendAxis2);
     }
+
 
     //filter for a specific country
     function countryFilter(data, ctr_code){

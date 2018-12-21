@@ -916,6 +916,8 @@
             .attr("height", function(d) { return 420 - y(d.rating); })
         })
 
+        bar.exit().remove();
+
         var g = chart.select(".tvalues");
 
         var text = g.selectAll(".tvalue")
@@ -936,7 +938,8 @@
             .attr("y", function(d){return y(d.rating) ;})
             .text(function(d) { return d3.format("0.2f")(d.rating);})
         })
-
+        text.exit().remove();
+        
         d3.selectAll(".tvalues").attr("transform", "translate(" + 0 + "," + -30 + ")");
       }
 
